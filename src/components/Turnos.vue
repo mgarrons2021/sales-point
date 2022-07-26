@@ -1,10 +1,8 @@
 <template>
 	<div class="grid">
 		<div class="col-12">
-			<div class="card">
-			<h4 class="text-center " ><span class="bg-primary m-3 p-3 br-3"> Termino el Turno correctamente </span> </h4>
-				<h3 class="text-center "> Iniciar  nuevo  Turno  </h3>
-				
+			<div class="card">			
+				<h3 class="text-center "> Iniciar  nuevo  Turno  </h3>				
 				<h4 class="text-center" v-if="idturn!=0"> Sucursal: {{ infopersonal.sucursal_nombre}}  </h4>
 				<h4 class="text-center" v-else> Sucursal:  </h4>
  				<div class="mt-5 col-5 m-auto"> 
@@ -13,7 +11,7 @@
 					 <Button class="form-submit w-full p-3 text-xl justify-content-between  " @click="goTurn()"  label="Iniciar Turno"  type="submit" value="login"></button>
 				</div>
 			</div>
-		</div>
+		</div> 
 	</div>
 </template>
 <script>
@@ -44,12 +42,17 @@ import axios from "axios";
 			}
 		},
 		mounted(){
+			this.authenticacion();
 			this.obtenerDataStorage();
 			this.obtenerDate();
-			this.determinateAMorPM();
-			
+			this.determinateAMorPM();			
 		},
 		methods: {
+			authenticacion(){
+				if( localStorage.getItem('User')==null ){
+					this.$router.push("/login");
+				}			
+			},
 			onUpload() {
 				this.$toast.add({severity: 'info', summary: 'Success', detail: 'File Uploaded', life: 3000});
 			},
@@ -58,18 +61,32 @@ import axios from "axios";
 				this.fecha = this.Dias[fecha_unix.getDay()]+' ,  '+fecha_unix.getDate()+' de  '+ this.MESES[fecha_unix.getMonth()]+ ' de '+fecha_unix.getFullYear();
 			},
 			determinateAMorPM(){
-				let date= new Date(Date.now());
-				if(date.getHours()>=16){
-					this.turno ='PM';
-				}else{
-					this.turno='AM';
-				}				
+
+				let var_post = {
+					user_id:  this.infopersonal.user_id,
+				}; 
+
+				axios.post("http://192.168.0.150/eerpwebv2/public/api/comprobeishon_turn",var_post)
+				.then((result)=>{			
+					console.log(result);		
+					let res=result.data.turno_id[0].total;
+					if(res>0){
+						this.turno='PM';
+					}else{
+						this.turno='AM';
+					}
+					
+				}).catch((r)=>{
+					console.log(r);
+				});   
+
+				//comprobeishon_turn
 			},
             goTurn(){	
 				let var_post = {
 					user_id:  this.infopersonal.user_id,
 					sucursal_id : this.infopersonal.sucursal,
-				};
+				};            
 				axios.post("http://192.168.0.150/eerpwebv2/public/api/turn_register",var_post)
 				.then((result)=>{			
 					console.log(result);	

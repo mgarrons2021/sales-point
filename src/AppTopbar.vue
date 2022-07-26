@@ -6,10 +6,8 @@
 		</router-link>
 		<button class="p-link layout-menu-button layout-topbar-button" @click="onMenuToggle">
 			<i class="pi pi-bars"></i>
-		</button>
-		
-		<Button label="CERRAR TURNO" class="p-button-danger ml-5" @click="closeTurn()" />
-		
+		</button>		
+		<Button label="CERRAR TURNO" class="p-button-danger ml-5" @click="closeTurn()" />		
 		<button class="p-link layout-topbar-menu-button layout-topbar-button"
 			v-styleclass="{ selector: '@next', enterClass: 'hidden', enterActiveClass: 'scalein', 
 			leaveToClass: 'hidden', leaveActiveClass: 'fadeout', hideOnOutsideClick: true}">
@@ -59,8 +57,7 @@ export default {
 				}).then((result) => {
 				if (result.isConfirmed) {
 					let turno = localStorage.getItem('turnoId');
-					this.infopersonal = JSON.parse(localStorage.getItem('User')) ;
-
+					this.infopersonal = JSON.parse(localStorage.getItem('User'));
 					let cerrar_turno = {
 						turno_id:  turno,
 						sucursal_id : this.infopersonal.sucursal 
@@ -70,7 +67,6 @@ export default {
 						console.log(result);
 						localStorage.removeItem('turnoId');
 						if (result.status == 200){
-							//console.log('ok');
 							this.$router.push("/turno");
 						}else{
 							console.log('Peticion Fallida');
@@ -90,42 +86,18 @@ export default {
 			this.infopersonal =JSON.parse(localStorage.getItem('User'));
 		},
 		closeSession(){
-			let user = {
+			//et dato=  (this.infopersonal==null)?'Invalid'
+			let user={
 				user: this.infopersonal.codigo,
 			};
-			axios.post("http://192.168.0.150/eerpwebv2/public/api/logout",user).then((result)=>{
-				if(result.status == 200){
-
-					console.log('Deslogeo exitoso'); 
-					this.$swal.fire({
-						title: 'Cerrar sesion?',
-						text: "",
-						icon: 'warning',
-						showCancelButton: true,
-						confirmButtonColor: '#3085d6',
-						cancelButtonColor: '#d33',
-						confirmButtonText: 'Si cerrar'
-						}).then((result) => {
-						if (result.isConfirmed) {
-							localStorage.removeItem('User');
-							this.$swal.fire(
-							'Ok',
-							'Sesion cerrada correctamente',
-							'success'
-							);
-							this.$router.push("/login");
-						}
-			});
-				}else{
-
-					this.$swal.fire({
-				title: 'Error Algo Salio Mal',
+			this.$swal.fire({
+				title: 'Cerrar sesion?',
 				text: "",
 				icon: 'warning',
 				showCancelButton: true,
 				confirmButtonColor: '#3085d6',
 				cancelButtonColor: '#d33',
-				confirmButtonText: 'Volver'
+				confirmButtonText: 'Si cerrar'
 				}).then((result) => {
 				if (result.isConfirmed) {
 					localStorage.removeItem('User');
@@ -137,33 +109,29 @@ export default {
 					this.$router.push("/login");
 				}
 			});
-
+			/* axios.post("http://192.168.0.150/eerpwebv2/public/api/logout",user).then((result)=>{				
+				console.log(result);
+				if(result.status == 200){
+					console.log('Deslogeo exitoso'); 					
+				}else{
+					console.log('fail');					
 				}
-				
-			
-			});
-		
-
-		
-			
+			}); */
 		}
-    },
+	},
 	mounted() {                           
-		this.returnPerson();      
-		                      
+		this.returnPerson();      		                      
 	},
 	data(){
 		 return{
 			  showModal: false,
 			  infopersonal:'',
 		 }
-	},
-
+	},     
 	computed: {
 		darkTheme() {
 			return this.$appState.darkTheme;
 		},		
-
 	},	
 }
 </script>

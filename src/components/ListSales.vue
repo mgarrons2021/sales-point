@@ -108,9 +108,15 @@ export default {
     };
   },
   mounted() {
+    this.authenticacion();
     this.getSales( new Date(Date.now()).getFullYear()+"-"+(new Date(Date.now()).getMonth()+1)+"-"+new Date(Date.now()).getUTCDate(),new Date(Date.now()).getFullYear()+"-"+(new Date(Date.now()).getMonth()+1)+"-"+new Date(Date.now()).getUTCDate() );
   },
   methods: {
+     authenticacion(){
+       if( localStorage.getItem('User')==null ){
+          this.$router.push("/login");
+       }      
+    },
     getSales(inicio,fin) {        
         axios
         .get(
@@ -147,13 +153,11 @@ export default {
         let data1=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getUTCDate();
         let data2=d1.getFullYear()+'-'+(d1.getMonth()+1)+'-'+d1.getUTCDate();
         this.getSales(data1,data2); 
-    }
-
-    
+    }    
   },
-   components: {
-       Modal
-    }
+  components: {
+      Modal
+  }
 };
 </script>
 <style scoped lang="scss">

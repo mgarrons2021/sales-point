@@ -102,22 +102,21 @@ import BlockViewer from './BlockViewer';
 import VueSweetalert2 from 'vue-sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 
-
 router.beforeEach(function(to, from, next) {
-    
-   /*  console.log(router.options.routes[1]);
-    if( localStorage.getItem('User')==null ){
-
-        next(false);
-
-    }else{
-        next();
-    } */
-    
     console.log(from);
     console.log(to);
+    console.log(router);
     window.scrollTo(0, 0);
-    next();
+    if( localStorage.getItem('User')==null ){
+      //router.replace({name: 'login'});
+      //router.go();
+      // router.push( {path:'/login'} );
+      // return  next({path:'/login'});
+      // router.replace({name:'/login'});
+        next();
+    }else{
+        next();
+    }    
 });
 
 const app = createApp(AppWrapper);
@@ -129,7 +128,6 @@ app.use(ConfirmationService);
 app.use(ToastService);
 app.use(router);
 app.use(VueSweetalert2);
-
 
 app.directive('tooltip', Tooltip);
 app.directive('ripple', Ripple);

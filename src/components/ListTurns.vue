@@ -23,7 +23,6 @@
       </div>
     </div>
   </div>
-
   <div class="col-12 md:col-12">
     <div class="card p-fluid">
       <DataTable
@@ -43,7 +42,6 @@
             </td>
           </template>
         </Column>
-
          <Column :style="{ width: '150px' }" header="Funcionario" field="nombre_usuario">
           <template #body="slotProps">
             <td style="" class="text-bold">
@@ -51,7 +49,6 @@
             </td>
           </template>
         </Column>
-
         <Column :style="{ width: '150px' }" header="Fecha" field="fecha">
           <template #body="slotProps">
             <td style="" class="text-bold">
@@ -59,15 +56,12 @@
             </td>
           </template>
         </Column>
-
         <Column
           field="turno"
           header="Turno"
           :style="{ width: '150px' }"
           frozen
-        ></Column>
-
-      
+        ></Column>      
         <Column
           field="ventas"
           header="Total Venta"
@@ -104,8 +98,7 @@
       </DataTable>
     </div>
     <modal :show="showModal" :datas="detail" @close="showModal = false">
-			<template #header>
-				
+			<template #header>				
 			</template>
 	</modal>
   </div>
@@ -126,10 +119,15 @@ export default {
     };
   },
   mounted() {
-    
+    this.authenticacion();
     this.getListTurn( new Date(Date.now()).getFullYear()+"-"+(new Date(Date.now()).getMonth()+1)+"-"+new Date(Date.now()).getUTCDate(),new Date(Date.now()).getFullYear()+"-"+(new Date(Date.now()).getMonth()+1)+"-"+new Date(Date.now()).getUTCDate() );
   },
   methods: {
+    authenticacion(){
+       if( localStorage.getItem('User')==null ){
+          this.$router.push("/login");
+       }      
+    },
     getListTurn(inicio,fin) {        
         axios
         .get(
@@ -141,7 +139,6 @@ export default {
             console.log(e);
         });        
     },
-   
     filterDates(){
         let d= new Date(this.desde);
         let d1= new Date(this.hasta);
@@ -149,12 +146,10 @@ export default {
         let data2=d1.getFullYear()+'-'+(d1.getMonth()+1)+'-'+d1.getUTCDate();
         this.getListTurn(data1,data2); 
     }
-
-    
   },
-   components: {
-       Modal
-    }
+  components: {
+      Modal
+  }
 };
 </script>
 <style scoped lang="scss">

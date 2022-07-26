@@ -92,7 +92,13 @@
           <template #list="slotProps">
             <div class="col-12">
               <div
-                class="flex flex-column md:flex-row align-items-center p-3 w-full"
+                class="
+                  flex flex-column
+                  md:flex-row
+                  align-items-center
+                  p-3
+                  w-full
+                "
               >
                 <img
                   :src="ruta + '' + slotProps.data.imagen"
@@ -108,10 +114,26 @@
                   </div>
                 </div>
                 <div
-                  class="flex flex-row md:flex-column justify-content-between w-full md:w-auto align-items-center md:align-items-end mt-5 md:mt-0"
+                  class="
+                    flex flex-row
+                    md:flex-column
+                    justify-content-between
+                    w-full
+                    md:w-auto
+                    align-items-center
+                    md:align-items-end
+                    mt-5
+                    md:mt-0
+                  "
                 >
                   <span
-                    class="text-2xl font-semibold mb-2 align-self-center md:align-self-end"
+                    class="
+                      text-2xl
+                      font-semibold
+                      mb-2
+                      align-self-center
+                      md:align-self-end
+                    "
                     >Bs. {{ slotProps.data.Precio }}</span
                   >
                   <Button
@@ -232,7 +254,7 @@
       </div>
     </div>
   </div>
-  <div id="content_qr">
+  <div id="content_qr" style="opacity: 0">
     <qrcode-vue :value="QRValue" size="80" level="H" />
   </div>
 </template>
@@ -244,6 +266,7 @@ import axios from "axios";
 import NumeroaLetras from "../utils/NumeroaLetras.js";
 import QrcodeVue from "qrcode.vue";
 import html2canvas from "html2canvas";
+import generateControlCode from "../utils/CodigoControl.js";
 
 export default {
   data() {
@@ -278,7 +301,6 @@ export default {
       subtotal: 0,
       subtotales: [],
       total: 0,
-
       nit_ci: 0,
       cliente: "",
       empresa: "",
@@ -293,6 +315,7 @@ export default {
     this.productService = new ProductService();
   },
   mounted() {
+    this.authenticacion();
     this.productService
       .getProducts()
       .then((data) => (this.dataviewValue = data));
@@ -302,6 +325,14 @@ export default {
     console.log(this.subtotal);
   },
   methods: {
+    authenticacion() {
+      if (localStorage.getItem("User") == null) {
+        this.$router.push("/login");
+      }
+      if (localStorage.getItem("turnoId") == null) {
+        this.$router.push("/turno");
+      }
+    },
     updateTotal() {
       this.total = 0;
       for (let i = 0; i < this.carrito.length; i++) {
@@ -329,7 +360,6 @@ export default {
           console.log(err);
         });
     },
-
     getPlates(id) {
       let result = axios
         .get(
@@ -366,6 +396,7 @@ export default {
     totalVents(price) {
       return price + 1;
     },
+    obtenerCodigoControl() {},
     registerSale() {
       let turno_id = localStorage.getItem("turnoId");
       let datos_de_venta = {
@@ -380,17 +411,32 @@ export default {
         user_id: 1,
         detalle_venta: this.carrito,
       };
-      //console.log(datos_de_venta);
-
+      console.log(datos_de_venta);
       axios
         .post(
           "http://192.168.0.150/eerpwebv2/public/api/sale_register",
           datos_de_venta
         )
         .then((result) => {
-          console.log(result);
+          let visitas = result.data.cantidad_visitas;
+          //cantidad_visitas
           if (result.data.status) {
-            this.downloadPDF(datos_de_venta);
+            this.$swal.fire({
+              position: "top-end",
+              icon: "success",
+              title: "Venta registrada correctamente . . . ",
+              showConfirmButton: false,
+              timer: 1500,
+            });
+            this.downloadPDF(datos_de_venta, visitas);
+          } else {
+            this.$swal.fire({
+              position: "top-end",
+              icon: "error",
+              title: "La venta no se registro correctamente  . . . ",
+              showConfirmButton: false,
+              timer: 1500,
+            });
           }
         });
     },
@@ -423,29 +469,29 @@ export default {
         this.empresa = "";
       }
     },
-    downloadPDF(datos) {
+
+    downloadPDF(datos, visita) {
       console.log(datos);
-
       var content_qr = document.getElementById("content_qr");
-
+      content_qr.style.opacity = 1;
       html2canvas(content_qr).then(function (canvas) {
         var pdf = new jsPDF();
 
         pdf.setFont("Arial");
 
         pdf.setFontSize(10);
-        pdf.text("DONESCO SRL", 28, 4, "center");
-        pdf.text("BODEGA PRINCIPAL", 28, 8, "center");
+        pdf.text("DONESCO SRL", 30, 4, "center");
+        pdf.text("BODEGA PRINCIPAL", 30, 8, "center");
         pdf.setFontSize(8);
-        pdf.text("Celular: 71387934", 28, 12, "center");
+        pdf.text("Celular: 71387934", 30, 12, "center");
         pdf.text("Calle Mario Flores y Padre Adrian Melgar", 28, 16, "center");
-        pdf.text("Santa Cruz - Bolivia", 28, 20, "center");
-        pdf.text("SCF 1", 28, 24, "center");
+        pdf.text("Santa Cruz - Bolivia", 30, 20, "center");
+        pdf.text("SCF 1", 30, 24, "center");
         pdf.setFont("Arial", "B");
         pdf.setFontSize(11);
-        pdf.text("FACTURA ORIGINAL", 28, 28, "center");
+        pdf.text("FACTURA ORIGINAL", 30, 28, "center");
         pdf.text(
-          "---------------------------------------------------",
+          "---------------------------------------------------------",
           25,
           34,
           "center"
@@ -457,33 +503,29 @@ export default {
         pdf.text("AUTORIZACION: " + "38401000410190", 2, 46);
         pdf.setFontSize(11);
         pdf.text(
-          "---------------------------------------------------",
+          "---------------------------------------------------------",
           25,
           52,
           "center"
         );
-
         pdf.setFontSize(10);
         pdf.text("Actividad Economica: " + datos.lugar, 2, 56);
         pdf.text("Fecha: " + new Date().toLocaleDateString(), 2, 60);
         pdf.text("Hora: " + new Date().toLocaleTimeString(), 2, 64);
         pdf.text("Cliente: " + datos.cliente, 2, 68);
         pdf.text("Nit/Ci: " + datos.nit_ci, 2, 72);
-
         pdf.setFontSize(11);
         pdf.text(
-          "---------------------------------------------------",
+          "---------------------------------------------------------",
           25,
           78,
           "center"
         );
-
         pdf.setFontSize(10);
         pdf.text("Cant", 2, 82);
         pdf.text("Concepto", 12, 82);
         pdf.text("P. Unit", 40, 82);
         pdf.text("Total", 55, 82);
-
         let salto = 86;
         datos.detalle_venta.forEach((element) => {
           console.log(element);
@@ -496,11 +538,12 @@ export default {
         salto += 4;
         pdf.setFontSize(11);
         pdf.text(
-          "---------------------------------------------------",
+          "---------------------------------------------------------",
           25,
           salto,
           "center"
         );
+
         pdf.setFontSize(10);
         salto += 4;
         pdf.text("Subtotal Bs", 2, salto);
@@ -525,7 +568,22 @@ export default {
           2,
           salto
         );
-        salto += 10;
+        salto += 4;
+        pdf.setFontSize(11);
+
+         pdf.text(
+          "---------------------------------------------------------",
+          25,
+          salto,
+          "center"
+        );
+        pdf.setFontSize(8);
+
+        /*         salto += 4;
+        pdf.text("Numero de Visita", 2, salto);
+        pdf.text(visita.toString(), 55, salto); */
+
+        salto += 8;
 
         var imgData = canvas.toDataURL("image/png");
         var imgWidth = 250;
@@ -534,6 +592,30 @@ export default {
         var heightLeft = imgHeight;
         var position = 0;
         pdf.addImage(imgData, "PNG", 25, salto, imgWidth, imgHeight);
+        content_qr.style.opacity = 0;
+        salto += 28;
+        let codigo_control = generateControlCode(
+          "383401000410190",
+          "127",
+          "123",
+          "20220715",
+          "70",
+          "12"
+        );
+        pdf.text("Codigo de Control :" + codigo_control.toString(), 2, salto);
+        salto += 4;
+        pdf.text("Fecha Limite de Emision :" + "2021-10-10", 2, salto);
+        salto += 5;
+        pdf.text('"ESTA FACTURA CONTRIBUYE AL DESARROLLO', 2, salto);
+        salto += 4;
+        pdf.text('        DEL PAIS EL USO ILICITO DE ESTA SERA', 2, salto);
+        salto += 4;
+        pdf.text('           SANCIONADO DE ACUERDO A LEY"', 2, salto);
+        salto += 4;
+        pdf.text('  Ley No. 453. El proveedor de servicios debe habilitar', 2, salto);
+        salto += 4;
+        pdf.text('     medios e instrumentos para efectural consultas.', 2, salto);
+
         /*  doc.save("comprobanteVenta.pdf"); */
         var string = pdf.output("datauristring");
         var embed =
@@ -546,6 +628,7 @@ export default {
     },
   },
 };
+
 var numeroALetras = (function () {
   // Código basado en https://gist.github.com/alfchee/e563340276f89b22042a
   function Unidades(num) {
@@ -572,11 +655,9 @@ var numeroALetras = (function () {
 
     return "";
   } //Unidades()
-
   function Decenas(num) {
     let decena = Math.floor(num / 10);
     let unidad = num - decena * 10;
-
     switch (decena) {
       case 1:
         switch (unidad) {
@@ -620,10 +701,8 @@ var numeroALetras = (function () {
         return Unidades(unidad);
     }
   } //Unidades()
-
   function DecenasY(strSin, numUnidades) {
     if (numUnidades > 0) return strSin + " Y " + Unidades(numUnidades);
-
     return strSin;
   } //DecenasY()
 
@@ -748,3 +827,5 @@ numeroALetras(500.34, {
 <style scoped lang="scss">
 @import "../assets/demo/badges.scss";
 </style>
+
+

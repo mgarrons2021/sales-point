@@ -208,23 +208,26 @@ const router = createRouter({
     routes,
 });
 
-
+/* 
 router.beforeEach(function(to, from, next) {
-    
+    window.scrollTo(0, 0);
      console.log(router.options.routes[1]);
      if( localStorage.getItem('User')==null ){
  
-         next(false);
+         next({path :'/'});
  
      }else{
          next();
      }
-     
+     next();
   /*    console.log(from);
      console.log(to);
-     window.scrollTo(0, 0);
+     
      next(); */
- });
+
+ //}); */
+
+
  
 
 

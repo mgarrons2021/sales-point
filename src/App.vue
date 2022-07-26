@@ -4,14 +4,12 @@
         <div class="layout-sidebar" @click="onSidebarClick">
             <AppMenu :model="menu" @menuitem-click="onMenuItemClick" />
         </div>
-
         <div class="layout-main-container">
             <div class="layout-main">
                 <router-view />
             </div>
             <AppFooter />
         </div>
-
 		<AppConfig :layoutMode="layoutMode" @layout-change="onLayoutChange" />
         <transition name="layout-mask">
             <div class="layout-mask p-component-overlay" v-if="mobileMenuActive"></div>
@@ -19,7 +17,6 @@
         <vue-basic-alert ref="alert" />
 	</div>
 </template>
-
 <script>
 import AppTopBar from './AppTopbar.vue';
 import AppMenu from './AppMenu.vue';
@@ -27,7 +24,6 @@ import AppConfig from './AppConfig.vue';
 import AppFooter from './AppFooter.vue';
 import VueBasicAlert from 'vue-basic-alert'
 import  QrcodeVue  from  'qrcode.vue';
-
 export default {
     emits: ['change-theme'],
     data() {
@@ -39,17 +35,16 @@ export default {
             menu : [
                 {
                     label: 'Home',
-                    items: [{
+                    items: 
+                    [
+                        {
                             /* label: 'Dashboard', icon: 'pi pi-fw pi-home', to: '/' */
                             label: 'Catalogo de Platos', icon: 'pi pi-fw pi-home', to: '/catalogo'
                         },
                         {
-                            label: 'Turnos', icon: 'pi pi-fw pi-bars', to: '/turno'
+                            label: 'Listar Ventas', icon: 'pi pi-shopping-cart', to: '/listsales'
                         },
-                         {
-                            label: 'Listar Ventas', icon: 'pi pi-fw pi-bars', to: '/listsales'
-                        },
-                         {
+                        {
                             label: 'Listar Turnos', icon: 'pi pi-fw pi-bars', to: '/list_turns'
                         }
                     ]
@@ -88,7 +83,6 @@ export default {
             else {
                 this.mobileMenuActive = !this.mobileMenuActive;
             }
-
             event.preventDefault();
         },
         onSidebarClick() {
@@ -125,7 +119,6 @@ export default {
                 else if (this.layoutMode === 'overlay')
                     return this.overlayMenuActive;
             }
-
             return true;
         }
     },
@@ -157,11 +150,9 @@ export default {
         'AppConfig': AppConfig,
         'AppFooter': AppFooter,
         'VueBasicAlert':VueBasicAlert,
-
     }
 }
 </script>
-
 <style lang="scss">
 @import './App.scss';
 </style>
