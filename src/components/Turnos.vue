@@ -91,6 +91,13 @@ import axios from "axios";
 				.then((result)=>{			
 					console.log(result);	
 					if (result.status == 200){
+						this.$swal.fire({
+							position: "top-end",
+							icon: "success",
+							title: "Iniciaste un turno correctamente . . . ",
+							showConfirmButton: false,
+							timer: 1500,
+						});
 						localStorage.setItem('turnoId',result.data.turno_id)
 						this.$router.push("/catalogo");						
 					}else{

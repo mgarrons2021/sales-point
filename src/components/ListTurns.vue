@@ -61,7 +61,14 @@
           header="Turno"
           :style="{ width: '150px' }"
           frozen
-        ></Column>      
+        >
+          <template #body="slotProps">
+              <td style="text-align: right" class="text-bold">
+                <span v-if="slotProps.data.turno==0">AM</span>
+                <span v-else>PM</span>
+              </td>
+            </template>        
+        </Column>      
         <Column
           field="ventas"
           header="Total Venta"

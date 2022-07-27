@@ -50,6 +50,17 @@
               v-model="empresa"
             />
           </div>
+
+          <div class="field col-2">
+            <label for="contador_visitas"> Nro Visitas</label>
+            <InputText
+              id="contador_visitas"
+              type="number"
+              placeholder=""
+              v-model="contador_visitas"
+            />
+          </div>
+
           <div class="field col-2">
             <label for="celular">Celular</label>
             <InputText
@@ -232,6 +243,7 @@
             </template>
           </Column>
         </DataTable>
+        
         <div class="card">
           <div class="grid">
             <div class="col-10">
@@ -251,6 +263,7 @@
             </div>
           </div>
         </div>
+
       </div>
     </div>
   </div>
@@ -260,18 +273,22 @@
 </template>
 
 <script>
-import jsPDF from "jspdf";
 import ProductService from "../service/ProductService";
 import axios from "axios";
-import NumeroaLetras from "../utils/NumeroaLetras.js";
 import QrcodeVue from "qrcode.vue";
-import html2canvas from "html2canvas";
+import downloadPDF from "../utils/FacturaPDF.js";
 import generateControlCode from "../utils/CodigoControl.js";
 
 export default {
   data() {
     return {
-      QRValue: "Hola Mundo",
+      datos_empresa: {
+        nombre: "DONESCO SRL",
+        celular: "78555410",
+        fecha: "2021-03-23",
+        nit: "166172023",
+      },
+      QRValue: "",
       optionsPlace: {
         name: "En Restaurante",
       },
@@ -301,10 +318,11 @@ export default {
       subtotal: 0,
       subtotales: [],
       total: 0,
-      nit_ci: 0,
+      nit_ci: "",
       cliente: "",
       empresa: "",
-      celular: 0,
+      celular: "",
+      autorizacion: null,
     };
   },
   components: {
@@ -314,13 +332,17 @@ export default {
   created() {
     this.productService = new ProductService();
   },
+
   mounted() {
     this.authenticacion();
     this.productService
       .getProducts()
       .then((data) => (this.dataviewValue = data));
     this.getCategorias();
+    this.getAutorizacion();
+    console.log(this.autorizacion);
   },
+
   updated() {
     console.log(this.subtotal);
   },
@@ -350,7 +372,6 @@ export default {
       this.getPlates(id);
     },
     getCategorias() {
-      //axios.get("http://192.168.0.150/eerpwebv2/public/api/getPlates?"+ 'categoria_plato_id=3')
       let result = axios
         .get("http://192.168.0.150/eerpwebv2/public/api/getCategories")
         .then((res) => {
@@ -396,28 +417,134 @@ export default {
     totalVents(price) {
       return price + 1;
     },
-    obtenerCodigoControl() {},
     registerSale() {
+      let fecha = new Date();
+      let fecha_actual =
+        fecha.getDate() +
+        "-" +
+        (fecha.getMonth() + 1).toString() +
+        "-" +
+        fecha.getFullYear();
       let turno_id = localStorage.getItem("turnoId");
-      let datos_de_venta = {
-        cliente: this.cliente,
-        nit_ci: this.nit_ci,
-        empresa: this.empresa,
-        telefono: this.celular,
-        total_venta: this.total,
-        tipo_pago: this.optionsPayment.name,
-        lugar: this.optionsPlace.name,
-        turno_id: turno_id,
-        user_id: 1,
-        detalle_venta: this.carrito,
-      };
-      console.log(datos_de_venta);
+      let datos_de_venta;
+      if (
+        this.cliente == "" &&
+        this.nit_ci == "" &&
+        this.empresa == "" &&
+        this.celular == ""
+      ) {
+        let codigoControl = {
+          nro_autorizacion: this.autorizacion.nro_autorizacion,
+          nro_factura: this.autorizacion.nro_factura + 1,
+          nit_ci: "0",
+          fecha_transaccion:
+            fecha.getDate().toString() +
+            (fecha.getMonth() + 1).toString() +
+            fecha.getFullYear().toString(),
+          total_transaccion: this.total.toString(),
+          llave_dosificacion: this.autorizacion.llave,
+        };
+
+        this.QRValue =
+          this.datos_empresa.nit.toString() +
+          "|" +
+          codigoControl.nro_factura +
+          "|" +
+          codigoControl.nro_autorizacion +
+          "|" +
+          fecha_actual.replace("/", "-") +
+          "|" +
+          codigoControl.total_transaccion +
+          "|" +
+          codigoControl.total_transaccion +
+          "|" +
+          this.generarCodigoControl(codigoControl).toString() +
+          "|" +
+          codigoControl.nit_ci +
+          "|" +
+          "0" +
+          "|" +
+          "0" +
+          "|" +
+          "0" +
+          "|";
+        datos_de_venta = {
+          cliente: "SIN NOMBRE",
+          nit_ci: 0,
+          nro_factura: this.autorizacion.nro_factura + 1,
+          nro_autorizacion: this.autorizacion.nro_autorizacion,
+          empresa: "SIN EMPRESA",
+          telefono: 0,
+          total_venta: this.total.toFixed(2),
+          tipo_pago: this.optionsPayment.name,
+          lugar: this.optionsPlace.name,
+          turno_id: turno_id,
+          user_id: 1,
+          detalle_venta: this.carrito,
+          codigo_control: this.generarCodigoControl(codigoControl).toString(),
+          qr: this.QRValue,
+          sucursal: JSON.parse(localStorage.getItem("User")).sucursal,
+        };
+      } else {
+        let codigoControl = {
+          nro_autorizacion: this.autorizacion.nro_autorizacion,
+          nro_factura: this.autorizacion.nro_factura + 1,
+          nit_ci: this.nit_ci.toString(),
+          fecha_transaccion:
+            fecha.getDate() + fecha.getMonth() + fecha.getFullYear(),
+          total_transaccion: this.total.toString(),
+          llave_dosificacion: this.autorizacion.llave,
+        };
+        this.QRValue =
+          this.datos_empresa.nit.toString() +
+          "|" +
+          codigoControl.nro_factura +
+          "|" +
+          codigoControl.nro_autorizacion +
+          "|" +
+          fecha_actual.replace("/", "-") +
+          "|" +
+          codigoControl.total_transaccion +
+          "|" +
+          codigoControl.total_transaccion +
+          "|" +
+          this.generarCodigoControl(codigoControl).toString() +
+          "|" +
+          codigoControl.nit_ci +
+          "|" +
+          "0" +
+          "|" +
+          "0" +
+          "|" +
+          "0" +
+          "|";
+        datos_de_venta = {
+          cliente: this.cliente,
+          nit_ci: this.nit_ci,
+          nro_factura: this.autorizacion.nro_factura + 1,
+          nro_autorizacion: this.autorizacion.nro_autorizacion,
+          empresa: this.empresa,
+          telefono: this.celular,
+          total_venta: this.total.toFixed(2),
+          tipo_pago: this.optionsPayment.name,
+          lugar: this.optionsPlace.name,
+          turno_id: turno_id,
+          user_id: 1,
+          detalle_venta: this.carrito,
+          codigo_control: this.generarCodigoControl(codigoControl).toString(),
+          qr: this.QRValue,
+          sucursal: JSON.parse(localStorage.getItem("User")).sucursal,
+        };
+      }
+      /* console.log(datos_de_venta); */
       axios
         .post(
           "http://192.168.0.150/eerpwebv2/public/api/sale_register",
           datos_de_venta
         )
         .then((result) => {
+          //console.log(result);
+          console.log(result.data);
           let visitas = result.data.cantidad_visitas;
           //cantidad_visitas
           if (result.data.status) {
@@ -428,7 +555,7 @@ export default {
               showConfirmButton: false,
               timer: 1500,
             });
-            this.downloadPDF(datos_de_venta, visitas);
+            downloadPDF(datos_de_venta, visitas);
           } else {
             this.$swal.fire({
               position: "top-end",
@@ -440,6 +567,7 @@ export default {
           }
         });
     },
+
     searchCliente() {
       console.log(this.nit_ci);
       if (this.nit_ci != "") {
@@ -454,10 +582,12 @@ export default {
               this.celular = retorn.cliente.telefono;
               this.cliente = retorn.cliente.nombre;
               this.empresa = retorn.cliente.empresa;
+              this.contador_visitas = retorn.cliente.contador_visitas;
             } else {
               this.celular = "";
               this.cliente = "";
               this.empresa = "";
+              this.contador_visitas = "";
             }
           })
           .catch((err) => {
@@ -469,363 +599,36 @@ export default {
         this.empresa = "";
       }
     },
-
-    downloadPDF(datos, visita) {
-      console.log(datos);
-      var content_qr = document.getElementById("content_qr");
-      content_qr.style.opacity = 1;
-      html2canvas(content_qr).then(function (canvas) {
-        var pdf = new jsPDF();
-
-        pdf.setFont("Arial");
-
-        pdf.setFontSize(10);
-        pdf.text("DONESCO SRL", 30, 4, "center");
-        pdf.text("BODEGA PRINCIPAL", 30, 8, "center");
-        pdf.setFontSize(8);
-        pdf.text("Celular: 71387934", 30, 12, "center");
-        pdf.text("Calle Mario Flores y Padre Adrian Melgar", 28, 16, "center");
-        pdf.text("Santa Cruz - Bolivia", 30, 20, "center");
-        pdf.text("SCF 1", 30, 24, "center");
-        pdf.setFont("Arial", "B");
-        pdf.setFontSize(11);
-        pdf.text("FACTURA ORIGINAL", 30, 28, "center");
-        pdf.text(
-          "---------------------------------------------------------",
-          25,
-          34,
-          "center"
-        );
-
-        pdf.setFontSize(10);
-        pdf.text("NIT: " + "166172023", 2, 38);
-        pdf.text("FACTURA: " + "127", 2, 42);
-        pdf.text("AUTORIZACION: " + "38401000410190", 2, 46);
-        pdf.setFontSize(11);
-        pdf.text(
-          "---------------------------------------------------------",
-          25,
-          52,
-          "center"
-        );
-        pdf.setFontSize(10);
-        pdf.text("Actividad Economica: " + datos.lugar, 2, 56);
-        pdf.text("Fecha: " + new Date().toLocaleDateString(), 2, 60);
-        pdf.text("Hora: " + new Date().toLocaleTimeString(), 2, 64);
-        pdf.text("Cliente: " + datos.cliente, 2, 68);
-        pdf.text("Nit/Ci: " + datos.nit_ci, 2, 72);
-        pdf.setFontSize(11);
-        pdf.text(
-          "---------------------------------------------------------",
-          25,
-          78,
-          "center"
-        );
-        pdf.setFontSize(10);
-        pdf.text("Cant", 2, 82);
-        pdf.text("Concepto", 12, 82);
-        pdf.text("P. Unit", 40, 82);
-        pdf.text("Total", 55, 82);
-        let salto = 86;
-        datos.detalle_venta.forEach((element) => {
-          console.log(element);
-          pdf.text(element.cantidad.toString(), 2, salto);
-          pdf.text(element.plato.toString(), 12, salto);
-          pdf.text(element.costo.toString(), 40, salto);
-          pdf.text(element.subtotal.toString(), 55, salto);
-          salto += 4;
+    generarCodigoControl(codigo_control) {
+      return generateControlCode(
+        codigo_control.nro_autorizacion,
+        codigo_control.nro_factura,
+        codigo_control.nit_ci,
+        codigo_control.fecha_transaccion,
+        codigo_control.total_transaccion,
+        codigo_control.llave_dosificacion
+      );
+    },
+    getAutorizacion() {
+      let sucursal_id = JSON.parse(localStorage.getItem("User")).sucursal;
+      let result = axios
+        .get(
+          "http://192.168.0.150/eerpwebv2/public/api/getAutorization?" +
+            "sucursal_id=" +
+            sucursal_id
+        )
+        .then((res) => {
+          this.autorizacion = JSON.parse(res.data.autorizaciones);
+          console.log(this.autorizacion);
+        })
+        .catch((err) => {
+          console.log(err);
         });
-        salto += 4;
-        pdf.setFontSize(11);
-        pdf.text(
-          "---------------------------------------------------------",
-          25,
-          salto,
-          "center"
-        );
-
-        pdf.setFontSize(10);
-        salto += 4;
-        pdf.text("Subtotal Bs", 2, salto);
-        pdf.text(datos.total_venta.toString(), 55, salto);
-        salto += 4;
-        pdf.text("Descuento Bs", 2, salto);
-        let descuento = 0;
-        pdf.text(descuento.toString(), 55, salto);
-        salto += 4;
-        pdf.text("Total Bs", 2, salto);
-        pdf.text((datos.total_venta - descuento).toString(), 55, salto);
-        salto += 8;
-        pdf.setFontSize(8);
-        pdf.text(
-          "Son : " +
-            numeroALetras(datos.total_venta - descuento, {
-              plural: "bolivianos",
-              singular: "boliviano",
-              centPlural: "centavos",
-              centSingular: "centavo",
-            }),
-          2,
-          salto
-        );
-        salto += 4;
-        pdf.setFontSize(11);
-
-         pdf.text(
-          "---------------------------------------------------------",
-          25,
-          salto,
-          "center"
-        );
-        pdf.setFontSize(8);
-
-        /*         salto += 4;
-        pdf.text("Numero de Visita", 2, salto);
-        pdf.text(visita.toString(), 55, salto); */
-
-        salto += 8;
-
-        var imgData = canvas.toDataURL("image/png");
-        var imgWidth = 250;
-        var pageHeight = 310;
-        var imgHeight = (canvas.height * imgWidth) / canvas.width;
-        var heightLeft = imgHeight;
-        var position = 0;
-        pdf.addImage(imgData, "PNG", 25, salto, imgWidth, imgHeight);
-        content_qr.style.opacity = 0;
-        salto += 28;
-        let codigo_control = generateControlCode(
-          "383401000410190",
-          "127",
-          "123",
-          "20220715",
-          "70",
-          "12"
-        );
-        pdf.text("Codigo de Control :" + codigo_control.toString(), 2, salto);
-        salto += 4;
-        pdf.text("Fecha Limite de Emision :" + "2021-10-10", 2, salto);
-        salto += 5;
-        pdf.text('"ESTA FACTURA CONTRIBUYE AL DESARROLLO', 2, salto);
-        salto += 4;
-        pdf.text('        DEL PAIS EL USO ILICITO DE ESTA SERA', 2, salto);
-        salto += 4;
-        pdf.text('           SANCIONADO DE ACUERDO A LEY"', 2, salto);
-        salto += 4;
-        pdf.text('  Ley No. 453. El proveedor de servicios debe habilitar', 2, salto);
-        salto += 4;
-        pdf.text('     medios e instrumentos para efectural consultas.', 2, salto);
-
-        /*  doc.save("comprobanteVenta.pdf"); */
-        var string = pdf.output("datauristring");
-        var embed =
-          "<embed width='100%' height='100%' src='" + string + "'><embed/>";
-        var x = window.open();
-        x.document.open();
-        x.document.write(embed);
-        x.document.close();
-      });
     },
   },
 };
-
-var numeroALetras = (function () {
-  // Código basado en https://gist.github.com/alfchee/e563340276f89b22042a
-  function Unidades(num) {
-    switch (num) {
-      case 1:
-        return "UN";
-      case 2:
-        return "DOS";
-      case 3:
-        return "TRES";
-      case 4:
-        return "CUATRO";
-      case 5:
-        return "CINCO";
-      case 6:
-        return "SEIS";
-      case 7:
-        return "SIETE";
-      case 8:
-        return "OCHO";
-      case 9:
-        return "NUEVE";
-    }
-
-    return "";
-  } //Unidades()
-  function Decenas(num) {
-    let decena = Math.floor(num / 10);
-    let unidad = num - decena * 10;
-    switch (decena) {
-      case 1:
-        switch (unidad) {
-          case 0:
-            return "DIEZ";
-          case 1:
-            return "ONCE";
-          case 2:
-            return "DOCE";
-          case 3:
-            return "TRECE";
-          case 4:
-            return "CATORCE";
-          case 5:
-            return "QUINCE";
-          default:
-            return "DIECI" + Unidades(unidad);
-        }
-      case 2:
-        switch (unidad) {
-          case 0:
-            return "VEINTE";
-          default:
-            return "VEINTI" + Unidades(unidad);
-        }
-      case 3:
-        return DecenasY("TREINTA", unidad);
-      case 4:
-        return DecenasY("CUARENTA", unidad);
-      case 5:
-        return DecenasY("CINCUENTA", unidad);
-      case 6:
-        return DecenasY("SESENTA", unidad);
-      case 7:
-        return DecenasY("SETENTA", unidad);
-      case 8:
-        return DecenasY("OCHENTA", unidad);
-      case 9:
-        return DecenasY("NOVENTA", unidad);
-      case 0:
-        return Unidades(unidad);
-    }
-  } //Unidades()
-  function DecenasY(strSin, numUnidades) {
-    if (numUnidades > 0) return strSin + " Y " + Unidades(numUnidades);
-    return strSin;
-  } //DecenasY()
-
-  function Centenas(num) {
-    let centenas = Math.floor(num / 100);
-    let decenas = num - centenas * 100;
-
-    switch (centenas) {
-      case 1:
-        if (decenas > 0) return "CIENTO " + Decenas(decenas);
-        return "CIEN";
-      case 2:
-        return "DOSCIENTOS " + Decenas(decenas);
-      case 3:
-        return "TRESCIENTOS " + Decenas(decenas);
-      case 4:
-        return "CUATROCIENTOS " + Decenas(decenas);
-      case 5:
-        return "QUINIENTOS " + Decenas(decenas);
-      case 6:
-        return "SEISCIENTOS " + Decenas(decenas);
-      case 7:
-        return "SETECIENTOS " + Decenas(decenas);
-      case 8:
-        return "OCHOCIENTOS " + Decenas(decenas);
-      case 9:
-        return "NOVECIENTOS " + Decenas(decenas);
-    }
-
-    return Decenas(decenas);
-  } //Centenas()
-
-  function Seccion(num, divisor, strSingular, strPlural) {
-    let cientos = Math.floor(num / divisor);
-    let resto = num - cientos * divisor;
-
-    let letras = "";
-
-    if (cientos > 0)
-      if (cientos > 1) letras = Centenas(cientos) + " " + strPlural;
-      else letras = strSingular;
-
-    if (resto > 0) letras += "";
-
-    return letras;
-  } //Seccion()
-
-  function Miles(num) {
-    let divisor = 1000;
-    let cientos = Math.floor(num / divisor);
-    let resto = num - cientos * divisor;
-
-    let strMiles = Seccion(num, divisor, "UN MIL", "MIL");
-    let strCentenas = Centenas(resto);
-
-    if (strMiles == "") return strCentenas;
-
-    return strMiles + " " + strCentenas;
-  } //Miles()
-
-  function Millones(num) {
-    let divisor = 1000000;
-    let cientos = Math.floor(num / divisor);
-    let resto = num - cientos * divisor;
-
-    let strMillones = Seccion(num, divisor, "UN MILLON DE", "MILLONES DE");
-    let strMiles = Miles(resto);
-
-    if (strMillones == "") return strMiles;
-
-    return strMillones + " " + strMiles;
-  } //Millones()
-
-  return function NumeroALetras(num, currency) {
-    currency = currency || {};
-    let data = {
-      numero: num,
-      enteros: Math.floor(num),
-      centavos: Math.round(num * 100) - Math.floor(num) * 100,
-      letrasCentavos: "",
-      letrasMonedaPlural: currency.plural || "PESOS CHILENOS", //'PESOS', 'Dólares', 'Bolívares', 'etcs'
-      letrasMonedaSingular: currency.singular || "PESO CHILENO", //'PESO', 'Dólar', 'Bolivar', 'etc'
-      letrasMonedaCentavoPlural: currency.centPlural || "CHIQUI PESOS CHILENOS",
-      letrasMonedaCentavoSingular:
-        currency.centSingular || "CHIQUI PESO CHILENO",
-    };
-
-    if (data.centavos > 0) {
-      data.letrasCentavos =
-        "CON " +
-        (function () {
-          if (data.centavos == 1)
-            return (
-              Millones(data.centavos) + " " + data.letrasMonedaCentavoSingular
-            );
-          else
-            return (
-              Millones(data.centavos) + " " + data.letrasMonedaCentavoPlural
-            );
-        })();
-    }
-
-    if (data.enteros == 0) return "CERO " + data.letrasMonedaPlural;
-    if (data.enteros == 1)
-      return (
-        Millones(data.enteros) + " " + "00/100" + data.letrasMonedaSingular
-      );
-    else
-      return Millones(data.enteros) + " " + "00/100 " + data.letrasMonedaPlural;
-  };
-})();
-
-// Modo de uso: 500,34 USD
-numeroALetras(500.34, {
-  plural: "dólares estadounidenses",
-  singular: "dólar estadounidense",
-  centPlural: "centavos",
-  centSingular: "centavo",
-});
 </script>
-
 <style scoped lang="scss">
 @import "../assets/demo/badges.scss";
 </style>
-
 

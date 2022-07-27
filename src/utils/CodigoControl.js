@@ -19,7 +19,12 @@ function generateControlCode(authorizationNumber, invoiceNumber, nitci,
 
 //redondea monto de transaccion 
 transactionAmount = roundUp(transactionAmount);
-
+console.log(authorizationNumber);
+console.log(invoiceNumber);
+console.log(nitci);
+console.log(dateOfTransaction);
+console.log(transactionAmount);
+console.log(dosageKey);
 /* ========== PASO 1 ============= */
 invoiceNumber = addVerhoeffDigit(invoiceNumber,2);
 nitci = addVerhoeffDigit(nitci,2);
