@@ -51,8 +51,24 @@ import axios from "axios";
 			authenticacion(){
 				if( localStorage.getItem('User')==null ){
 					this.$router.push("/login");
-				}			
-			},
+				}		
+				if(localStorage.getItem('turnoId')!=null){
+					let result = axios
+					.get("http://192.168.0.150/eerpwebv2/public/api/verified_turn?id_turno="+JSON.parse(localStorage.getItem("turnoId")))
+					.then((res) => {
+						console.log(res);
+						if(res.data.success==false){
+							this.$router.push("/turno");
+						}else{
+							this.$router.push("/catalogo");
+						}                     
+					})
+					.catch((err) => {
+						console.log(err);
+					});					
+				}	
+				
+			},			
 			onUpload() {
 				this.$toast.add({severity: 'info', summary: 'Success', detail: 'File Uploaded', life: 3000});
 			},
@@ -106,6 +122,7 @@ import axios from "axios";
 					}
 				});   
 			},
+
 			obtenerDataStorage(){
 				let dato  = JSON.parse( localStorage.getItem('turnoId'));
 				if(dato!=null){					

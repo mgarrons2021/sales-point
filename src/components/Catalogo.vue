@@ -243,7 +243,7 @@
             </template>
           </Column>
         </DataTable>
-        
+
         <div class="card">
           <div class="grid">
             <div class="col-10">
@@ -263,7 +263,6 @@
             </div>
           </div>
         </div>
-
       </div>
     </div>
   </div>
@@ -332,7 +331,6 @@ export default {
   created() {
     this.productService = new ProductService();
   },
-
   mounted() {
     this.authenticacion();
     this.productService
@@ -342,7 +340,6 @@ export default {
     this.getAutorizacion();
     console.log(this.autorizacion);
   },
-
   updated() {
     console.log(this.subtotal);
   },
@@ -352,19 +349,38 @@ export default {
         this.$router.push("/login");
       }
       if (localStorage.getItem("turnoId") == null) {
+        //verified_turn
         this.$router.push("/turno");
+
+      }else{
+
+          let result = axios
+          .get("http://192.168.0.150/eerpwebv2/public/api/verified_turn?id_turno="+JSON.parse(localStorage.getItem("turnoId")))
+          .then((res) => {
+             console.log(res);
+            if(res.data.success==false){
+                this.$router.push("/turno");
+            }                         
+          })
+          .catch((err) => {
+            console.log(err);
+          });
       }
+
     },
     updateTotal() {
       this.total = 0;
       for (let i = 0; i < this.carrito.length; i++) {
-        this.total += this.carrito[i].subtotal;
+        this.total += parseFloat(this.carrito[i].subtotal);
       }
     },
     calculateSubtotal: function (id) {
       this.carrito[id].cantidad = event.target.value;
-      this.carrito[id].subtotal =
-        this.carrito[id].costo * this.carrito[id].cantidad;
+      let subtotal_parse = this.redondear(
+        this.carrito[id].costo * this.carrito[id].cantidad
+      );
+      let subtotal_parse_float = parseFloat(subtotal_parse);
+      this.carrito[id].subtotal = subtotal_parse_float.toFixed(2);
       this.updateTotal();
     },
     onSortChange(event) {
@@ -388,9 +404,10 @@ export default {
             "categoria_plato_id=" +
             id +
             "&sucursal_id=" +
-            3
+             JSON.parse(localStorage.getItem("User")).sucursal
         )
         .then((res) => {
+          console.log(res);
           if (res.data.plate.length > 0) {
             this.plates = res.data.plate;
           } else {
@@ -479,7 +496,7 @@ export default {
           tipo_pago: this.optionsPayment.name,
           lugar: this.optionsPlace.name,
           turno_id: turno_id,
-          user_id: 1,
+          user_id: JSON.parse(localStorage.getItem("User")).user_id,
           detalle_venta: this.carrito,
           codigo_control: this.generarCodigoControl(codigoControl).toString(),
           qr: this.QRValue,
@@ -529,7 +546,7 @@ export default {
           tipo_pago: this.optionsPayment.name,
           lugar: this.optionsPlace.name,
           turno_id: turno_id,
-          user_id: 1,
+          user_id: JSON.parse(localStorage.getItem("User")).user_id,
           detalle_venta: this.carrito,
           codigo_control: this.generarCodigoControl(codigoControl).toString(),
           qr: this.QRValue,
@@ -624,6 +641,26 @@ export default {
         .catch((err) => {
           console.log(err);
         });
+    },
+    redondear(monto) {
+      let _monto = monto.toFixed(1);
+      let dato = _monto.toString();
+      let ultimo = _monto.toString().charAt(dato.length - 1);
+      console.log("dato: ",dato);
+      console.log("ultimo: ",ultimo);
+      if (parseInt(ultimo) > 5) {
+        _monto = Math.round(_monto);
+        console.log(_monto);
+      } else {
+        if (parseInt(ultimo) == 0) {
+          _monto = Math.round(_monto);
+          console.log(_monto);
+        } else {
+          _monto = Math.round(_monto)+ ".50" ;
+          console.log(_monto);
+        }
+      }
+      return _monto;
     },
   },
 };

@@ -109,7 +109,7 @@ export default {
   },
   mounted() {
     this.authenticacion();
-    this.getSales( new Date(Date.now()).getFullYear()+"-"+(new Date(Date.now()).getMonth()+1)+"-"+new Date(Date.now()).getUTCDate(),new Date(Date.now()).getFullYear()+"-"+(new Date(Date.now()).getMonth()+1)+"-"+new Date(Date.now()).getUTCDate() );
+    this.getSales( new Date(Date.now()).getFullYear()+"-"+(new Date(Date.now()).getMonth()+1)+"-"+new Date(Date.now()).getUTCDate(),new Date(Date.now()).getFullYear()+"-"+(new Date(Date.now()).getMonth()+1)+"-"+new Date(Date.now()).getUTCDate() , JSON.parse(localStorage.getItem("User")).sucursal );
   },
   methods: {
      authenticacion(){
@@ -117,10 +117,10 @@ export default {
           this.$router.push("/login");
        }      
     },
-    getSales(inicio,fin) {        
+    getSales(inicio,fin, sucursal) {        
         axios
         .get(
-          "http://192.168.0.150/eerpwebv2/public/api/sales_lists?fecha_inicio='"+inicio+"'&fecha_fin='"+fin+"'",
+          "http://192.168.0.150/eerpwebv2/public/api/sales_lists?fecha_inicio='"+inicio+"'&fecha_fin='"+fin+"'&sucursal="+sucursal,
         )
         .then((result) => {          
             if(result.data.success){
@@ -148,11 +148,12 @@ export default {
         });  
     },
     filterDates(){
+
         let d= new Date(this.desde);
         let d1= new Date(this.hasta);
         let data1=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getUTCDate();
         let data2=d1.getFullYear()+'-'+(d1.getMonth()+1)+'-'+d1.getUTCDate();
-        this.getSales(data1,data2); 
+        this.getSales(data1,data2, JSON.parse(localStorage.getItem("User")).sucursal ); 
     }    
   },
   components: {

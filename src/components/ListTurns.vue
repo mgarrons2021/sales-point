@@ -127,7 +127,7 @@ export default {
   },
   mounted() {
     this.authenticacion();
-    this.getListTurn( new Date(Date.now()).getFullYear()+"-"+(new Date(Date.now()).getMonth()+1)+"-"+new Date(Date.now()).getUTCDate(),new Date(Date.now()).getFullYear()+"-"+(new Date(Date.now()).getMonth()+1)+"-"+new Date(Date.now()).getUTCDate() );
+    this.getListTurn( new Date(Date.now()).getFullYear()+"-"+(new Date(Date.now()).getMonth()+1)+"-"+new Date(Date.now()).getUTCDate(),new Date(Date.now()).getFullYear()+"-"+(new Date(Date.now()).getMonth()+1)+"-"+new Date(Date.now()).getUTCDate() ,  JSON.parse(localStorage.getItem("User")).sucursal );
   },
   methods: {
     authenticacion(){
@@ -135,10 +135,10 @@ export default {
           this.$router.push("/login");
        }      
     },
-    getListTurn(inicio,fin) {        
+    getListTurn(inicio,fin,sucursal) {        
         axios
         .get(
-          "http://192.168.0.150/eerpwebv2/public/api/list_turns?fecha_inicio='"+inicio+ "'&fecha_fin='" +fin+ "'",
+          "http://192.168.0.150/eerpwebv2/public/api/list_turns?fecha_inicio='"+inicio+ "'&fecha_fin='" +fin+ "'&sucursal="+sucursal,
         )
         .then((result) => {          
             this.ventas = result.data.turns;
@@ -151,7 +151,7 @@ export default {
         let d1= new Date(this.hasta);
         let data1=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getUTCDate();
         let data2=d1.getFullYear()+'-'+(d1.getMonth()+1)+'-'+d1.getUTCDate();
-        this.getListTurn(data1,data2); 
+        this.getListTurn(data1,data2,  JSON.parse(localStorage.getItem("User")).sucursal ); 
     }
   },
   components: {

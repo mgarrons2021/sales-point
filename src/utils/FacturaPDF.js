@@ -20,7 +20,8 @@ export default function downloadPDF(datos, visita) {
   html2canvas(content_qr).then(function (canvas) {
     var pdf = new jsPDF();
 
-    pdf.setFont("Arial");
+    pdf.addFont('Roboto-Medium.ttf', 'helvetica', 'bold', 1000);
+
 
     pdf.setFontSize(10);
     pdf.text(datos_empresa.nombre, 30, 4, "center");
@@ -30,7 +31,9 @@ export default function downloadPDF(datos, visita) {
     pdf.text("Calle Mario Flores y Padre Adrian Melgar", 28, 16, "center");
     pdf.text("Santa Cruz - Bolivia", 30, 20, "center");
     pdf.text("SCF 1", 30, 24, "center");
-    pdf.setFont("Arial", "B");
+    
+    pdf.addFont('Roboto-Medium.ttf', 'helvetica', 'bold', 1000);
+    
     pdf.setFontSize(11);
     pdf.text("FACTURA ORIGINAL", 30, 28, "center");
     pdf.text(
@@ -42,7 +45,7 @@ export default function downloadPDF(datos, visita) {
 
     pdf.setFontSize(10);
     pdf.text("NIT: " + datos_empresa.nit, 2, 38);
-    pdf.text("FACTURA: "+ datos.nro_factura, 2, 42);
+    pdf.text("FACTURA: " + datos.nro_factura, 2, 42);
     pdf.text("AUTORIZACION: " + datos.nro_autorizacion, 2, 46);
     pdf.setFontSize(11);
     pdf.text(
@@ -71,11 +74,11 @@ export default function downloadPDF(datos, visita) {
     pdf.text("Total", 55, 82);
     let salto = 86;
     datos.detalle_venta.forEach((element) => {
-      console.log(element);
-      pdf.text(element.cantidad.toString(), 2, salto);
+      let _cantidad = parseFloat(element.cantidad).toFixed(2);
+      pdf.text(_cantidad.toString(), 2, salto);
       pdf.text(element.plato.toString(), 12, salto);
       pdf.text(element.costo.toString(), 40, salto);
-      pdf.text(element.subtotal.toFixed(2).toString(), 55, salto);
+      pdf.text(element.subtotal.toString(), 55, salto);
       salto += 4;
     });
     salto += 4;
@@ -93,20 +96,21 @@ export default function downloadPDF(datos, visita) {
     pdf.text(datos.total_venta.toString(), 55, salto);
     salto += 4;
     pdf.text("Descuento Bs", 2, salto);
-    let descuento = 0;
+    let descuento = 0.0;
     pdf.text(descuento.toString(), 55, salto);
     salto += 4;
     pdf.text("Total Bs", 2, salto);
-    pdf.text((datos.total_venta - descuento).toString(), 55, salto);
+    let total = parseFloat(datos.total_venta - descuento).toFixed(2);
+    pdf.text(total.toString(), 55, salto);
     salto += 8;
     pdf.setFontSize(8);
     pdf.text(
       "Son : " +
         NumeroaLetras(datos.total_venta - descuento, {
-          plural: "bolivianos",
-          singular: "boliviano",
-          centPlural: "centavos",
-          centSingular: "centavo",
+          plural: " bolivianos",
+          singular: " boliviano",
+          centPlural: " centavos",
+          centSingular: " centavo",
         }),
       2,
       salto
@@ -122,21 +126,19 @@ export default function downloadPDF(datos, visita) {
     );
     pdf.setFontSize(8);
 
-    salto += 8;
+    salto += 6;
 
     var imgData = canvas.toDataURL("image/png");
-    var imgWidth = 350;
-    var pageHeight = 410;
+    var imgWidth = 310;
+    var pageHeight = 390;
     var imgHeight = (canvas.height * imgWidth) / canvas.width;
     var heightLeft = imgHeight;
     var position = 0;
     pdf.addImage(imgData, "PNG", 25, salto, imgWidth, imgHeight);
     content_qr.style.opacity = 0;
-    salto += 28;
+    salto += 30;
 
-    
-
-    pdf.text("Codigo de Control :" +datos.codigo_control, 2, salto);
+    pdf.text("Codigo de Control :" + datos.codigo_control, 2, salto);
     salto += 4;
     pdf.text("Fecha Limite de Emision :" + "2021-10-10", 2, salto);
     salto += 5;
@@ -168,6 +170,34 @@ export default function downloadPDF(datos, visita) {
   });
 }
 
-function generarCodigoControl(codigo_control){
-    return generateControlCode(codigo_control.nro_autorizacion,codigo_control.nro_factura,codigo_control.nit_ci,codigo_control.fecha_transaccion,codigo_control.total_transaccion,codigo_control.llave_dosificacion);
+function generarCodigoControl(codigo_control) {
+  return generateControlCode(
+    codigo_control.nro_autorizacion,
+    codigo_control.nro_factura,
+    codigo_control.nit_ci,
+    codigo_control.fecha_transaccion,
+    codigo_control.total_transaccion,
+    codigo_control.llave_dosificacion
+  );
+}
+
+function redondear(monto) {
+  let _monto = monto.toFixed(1);
+  let dato = _monto.toString();
+  let ultimo = _monto.toString().charAt(dato.length - 1);
+  console.log("dato: ", dato);
+  console.log("ultimo: ", ultimo);
+  if (parseInt(ultimo) > 5) {
+    _monto = Math.round(_monto);
+    console.log(_monto);
+  } else {
+    if (parseInt(ultimo) == 0) {
+      _monto = Math.round(_monto);
+      console.log(_monto);
+    } else {
+      _monto = Math.round(_monto) + ".50";
+      console.log(_monto);
+    }
+  }
+  return _monto;
 }
