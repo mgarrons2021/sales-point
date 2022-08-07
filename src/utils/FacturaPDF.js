@@ -18,10 +18,9 @@ export default function downloadPDF(datos, visita) {
   var content_qr = document.getElementById("content_qr");
   content_qr.style.opacity = 1;
   html2canvas(content_qr).then(function (canvas) {
-    var pdf = new jsPDF();
+    let pdf = new jsPDF();
 
-    pdf.addFont('Roboto-Medium.ttf', 'helvetica', 'bold', 1000);
-
+    pdf.addFont("Roboto-Medium.ttf", "helvetica", "bold", 1000);
 
     pdf.setFontSize(10);
     pdf.text(datos_empresa.nombre, 30, 4, "center");
@@ -31,9 +30,9 @@ export default function downloadPDF(datos, visita) {
     pdf.text("Calle Mario Flores y Padre Adrian Melgar", 28, 16, "center");
     pdf.text("Santa Cruz - Bolivia", 30, 20, "center");
     pdf.text("SCF 1", 30, 24, "center");
-    
-    pdf.addFont('Roboto-Medium.ttf', 'helvetica', 'bold', 1000);
-    
+
+    pdf.addFont("Roboto-Medium.ttf", "helvetica", "bold", 1000);
+
     pdf.setFontSize(11);
     pdf.text("FACTURA ORIGINAL", 30, 28, "center");
     pdf.text(
@@ -54,6 +53,7 @@ export default function downloadPDF(datos, visita) {
       52,
       "center"
     );
+
     pdf.setFontSize(10);
     pdf.text("Actividad Economica: " + datos.lugar, 2, 56);
     pdf.text("Fecha: " + fecha_actual, 2, 60);
@@ -67,11 +67,13 @@ export default function downloadPDF(datos, visita) {
       78,
       "center"
     );
+
     pdf.setFontSize(10);
     pdf.text("Cant", 2, 82);
     pdf.text("Concepto", 12, 82);
     pdf.text("P. Unit", 40, 82);
     pdf.text("Total", 55, 82);
+
     let salto = 86;
     datos.detalle_venta.forEach((element) => {
       let _cantidad = parseFloat(element.cantidad).toFixed(2);
@@ -81,6 +83,7 @@ export default function downloadPDF(datos, visita) {
       pdf.text(element.subtotal.toString(), 55, salto);
       salto += 4;
     });
+
     salto += 4;
     pdf.setFontSize(11);
     pdf.text(
@@ -115,6 +118,7 @@ export default function downloadPDF(datos, visita) {
       2,
       salto
     );
+
     salto += 4;
     pdf.setFontSize(11);
 
@@ -129,6 +133,7 @@ export default function downloadPDF(datos, visita) {
     salto += 6;
 
     var imgData = canvas.toDataURL("image/png");
+    console.log(imgData);
     var imgWidth = 310;
     var pageHeight = 390;
     var imgHeight = (canvas.height * imgWidth) / canvas.width;
@@ -156,8 +161,15 @@ export default function downloadPDF(datos, visita) {
     salto += 4;
     pdf.text("     medios e instrumentos para efectural consultas.", 2, salto);
     salto += 4;
-    pdf.text("Numero de Visita", 2, salto);
-    pdf.text(visita.toString(), 55, salto);
+
+    if( datos.sucursal == 17 ){
+      
+      pdf.text("Numero de Visita", 2, salto);
+      pdf.text(visita.toString(), 55, salto);
+
+    }
+
+    
 
     /*  doc.save("comprobanteVenta.pdf"); */
     var string = pdf.output("datauristring");

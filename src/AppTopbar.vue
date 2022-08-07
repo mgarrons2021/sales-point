@@ -1,137 +1,167 @@
 <template>
-	<div class="layout-topbar">
-		<router-link to="/" class="layout-topbar-logo">
-			<!--<img alt="Logo" :src="topbarImage()" /> -->
-			<span>Donesco Srl</span>
-		</router-link>
-		<button class="p-link layout-menu-button layout-topbar-button" @click="onMenuToggle">
-			<i class="pi pi-bars"></i>
-		</button>		
-		<Button label="CERRAR TURNO" class="p-button-danger ml-5" @click="closeTurn()" />		
-		<button class="p-link layout-topbar-menu-button layout-topbar-button"
-			v-styleclass="{ selector: '@next', enterClass: 'hidden', enterActiveClass: 'scalein', 
-			leaveToClass: 'hidden', leaveActiveClass: 'fadeout', hideOnOutsideClick: true}">
-			<i class="pi pi-ellipsis-v"></i>
-		</button>
-		<ul class="layout-topbar-menu hidden lg:flex origin-top">
-			<li>
-				<div>
-				<b>{{infopersonal.name}} </b><br>
-				{{ infopersonal.sucursal_nombre}}
-				</div>
-			</li>
-			<li>
-				<button class="p-link layout-topbar-button">
-					<i class="pi pi-user"></i>
-					<span>Profile</span>
-				</button>
-			</li>
-			<button class="p-link layout-menu-button layout-topbar-button" @click="closeSession()" >
-				<i class="pi pi-power-off"></i>
-			</button>
-		</ul>            
-	</div>
+  <div class="layout-topbar">
+    <button
+      class="p-link layout-menu-button layout-topbar-button"
+      @click="onMenuToggle"
+    >
+      <i class="pi pi-bars"></i>
+    </button>
+    <Button
+      label="CERRAR TURNO"
+      :style="!isVisibilityButtonCloseTurn ? 'display:block' : 'display:none'"
+      class="p-button-danger ml-5"
+      @click="closeTurn()"
+    />
+    <button
+      class="p-link layout-topbar-menu-button layout-topbar-button"
+      v-styleclass="{
+        selector: '@next',
+        enterClass: 'hidden',
+        enterActiveClass: 'scalein',
+        leaveToClass: 'hidden',
+        leaveActiveClass: 'fadeout',
+        hideOnOutsideClick: true,
+      }"
+    >
+      <i class="pi pi-ellipsis-v"></i>
+    </button>
+    <ul class="layout-topbar-menu hidden lg:flex origin-top">
+      <li>
+        <div>
+          <b>{{ infopersonal.name }} </b><br />
+          {{ infopersonal.sucursal_nombre }}
+        </div>
+      </li>
+      <li>
+        <button class="p-link layout-topbar-button">
+          <i class="pi pi-user"></i>
+          <span>Profile</span>
+        </button>
+      </li>
+      <button
+        class="p-link layout-menu-button layout-topbar-button"
+        @click="closeSession()"
+      >
+        <i class="pi pi-power-off"></i>
+      </button>
+    </ul>
+  </div>
 </template>
 <script>
+import { inject } from "vue";
 import axios from "axios";
-export default {
-    methods: {
-        onMenuToggle(event) {
-            this.$emit('menu-toggle', event);
-        },
-		onTopbarMenuToggle(event) {
-            this.$emit('topbar-menu-toggle', event);
-        },
-		topbarImage() {
-			return this.$appState.darkTheme ? 'images/logo-white.svg' : 'images/logo-dark.svg';
-		},
-		closeTurn(){
-			this.$swal.fire({
-				title: 'Cerrar turno?',
-				text: "Cerrara el turno en  sucursal -> de "+(this.infopersonal.sucursal_nombre)+" " , 
-				icon: 'warning',
-				showCancelButton: true,
-				confirmButtonColor: '#3085d6',
-				cancelButtonColor: '#d33',
-				confirmButtonText: 'Si cerrar'
-				}).then((result) => {
-				if (result.isConfirmed) {
-					let turno = localStorage.getItem('turnoId');
-					this.infopersonal = JSON.parse(localStorage.getItem('User'));
-					let cerrar_turno = {
-						turno_id:  turno,
-						sucursal_id : this.infopersonal.sucursal 
-					}; 			
-					axios.post("http://192.168.0.150/eerpwebv2/public/api/updated_turn",cerrar_turno)
-					.then((result)=>{		
-						console.log(result);
-						localStorage.removeItem('turnoId');
-						if (result.status == 200){
-							this.$router.push("/turno");
-						}else{
-							console.log('Peticion Fallida');
-						}
-					});
 
-					this.$swal.fire(
-					'Ok',
-					'Turno cerrado correctamente',
-					'success'
-					)
-				}
-			})
-			
-		},
-		returnPerson(){
-			this.infopersonal =JSON.parse(localStorage.getItem('User'));
-		},
-		closeSession(){
-			//et dato=  (this.infopersonal==null)?'Invalid'
-			let user={
-				user: this.infopersonal.codigo,
-			};
-			this.$swal.fire({
-				title: 'Cerrar sesion?',
-				text: "",
-				icon: 'warning',
-				showCancelButton: true,
-				confirmButtonColor: '#3085d6',
-				cancelButtonColor: '#d33',
-				confirmButtonText: 'Si cerrar'
-				}).then((result) => {
-				if (result.isConfirmed) {
-					localStorage.removeItem('User');
-					this.$swal.fire(
-					'Ok',
-					'Sesion cerrada correctamente',
-					'success'
-					);
-					this.$router.push("/login");
-				}
-			});
-			/* axios.post("http://192.168.0.150/eerpwebv2/public/api/logout",user).then((result)=>{				
-				console.log(result);
-				if(result.status == 200){
-					console.log('Deslogeo exitoso'); 					
-				}else{
-					console.log('fail');					
-				}
-			}); */
-		}
-	},
-	mounted() {                           
-		this.returnPerson();      		                      
-	},
-	data(){
-		 return{
-			  showModal: false,
-			  infopersonal:'',
-		 }
-	},     
-	computed: {
-		darkTheme() {
-			return this.$appState.darkTheme;
-		},		
-	},	
-}
+export default {
+  data() {
+    return {
+      isVisibilityButtonCloseTurn: true,
+      showModal: false,
+      infopersonal: "",
+    };
+  },
+  methods: {
+    onMenuToggle(event) {
+      this.$emit("menu-toggle", event);
+    },
+    onTopbarMenuToggle(event) {
+      this.$emit("topbar-menu-toggle", event);
+    },
+    topbarImage() {
+      return this.$appState.darkTheme
+        ? "images/logo-white.svg"
+        : "images/logo-dark.svg";
+    },
+    closeTurn() {
+      this.$swal
+        .fire({
+          title: "Cerrar turno?",
+          text:
+            "Cerrara el turno en  sucursal -> de " +
+            this.infopersonal.sucursal_nombre +
+            " ",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonColor: "#3085d6",
+          cancelButtonColor: "#d33",
+          confirmButtonText: "Si cerrar",
+        })
+        .then((result) => {
+          if (result.isConfirmed) {
+            let turno = localStorage.getItem("turnoId");
+            this.infopersonal = JSON.parse(localStorage.getItem("User"));
+            let cerrar_turno = {
+              turno_id: turno,
+              sucursal_id: this.infopersonal.sucursal,
+            };
+            axios
+              .post(this.url + "updated_turn", cerrar_turno)
+              .then((result) => {
+                localStorage.removeItem("turnoId");
+                localStorage.setItem("Orden", 1);
+                if (result.status == 200) {
+                  this.$router.push("/turno");
+                } else {
+                  console.log("Peticion Fallida");
+                }
+              });
+
+            this.$swal.fire("Ok", "Turno cerrado correctamente", "success");
+          }
+        });
+    },
+    check_open_turn() {
+      let turno_id = localStorage.getItem('turnoId');
+	  console.log("Turno Existe :  "+(turno_id!=null).toString());
+	  if(turno_id!=null){
+              this.isVisibilityButtonCloseTurn = false;
+ 
+	  }
+    },
+    returnPerson() {
+      this.infopersonal = JSON.parse(localStorage.getItem("User"));
+    },
+    closeSession() {
+      //et dato=  (this.infopersonal==null)?'Invalid'
+      let user = {
+        user: this.infopersonal.codigo,
+      };
+      this.$swal
+        .fire({
+          title: "Cerrar sesion?",
+          text: "",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonColor: "#3085d6",
+          cancelButtonColor: "#d33",
+          confirmButtonText: "Si cerrar",
+        })
+        .then((result) => {
+          if (result.isConfirmed) {
+            localStorage.removeItem("User");
+            this.$swal.fire("Ok", "Sesion cerrada correctamente", "success");
+            this.$router.push("/login");
+          }
+        });
+    },
+  },
+
+  mounted() {
+    this.returnPerson();
+	this.check_open_turn();
+  },
+  updated(){
+	this.check_open_turn();
+  },
+  computed: {
+    darkTheme() {
+      return this.$appState.darkTheme;
+    },
+  },
+  setup() {
+    const url = inject("url");
+    return {
+      url,
+    };
+  },
+};
 </script>

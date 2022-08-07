@@ -2,7 +2,10 @@
   <div class="grid">
     <div class="col-12">
       <div class="card p-fluid">
-        <h5>Formulario de Registro</h5>
+        <h5>
+          Formulario de Registro - Nro de Transaccion:
+          {{ this.nro_transaccion + 1 }}
+        </h5>
         <div class="formgrid grid">
           <div class="field col-2">
             <label for="lugar">Lugar</label>
@@ -11,6 +14,19 @@
               :options="optionsPlaces"
               optionLabel="name"
               :placeholder="optionsPlace"
+              @change="mostrarDeliverys()"
+            />
+          </div>
+          <div
+            class="field col-2"
+            :style="isVisibilityDeliverys ? 'display:block' : 'display:none'"
+          >
+            <label for="delivery">Delivery</label>
+            <Dropdown
+              v-model="optionsDelivery"
+              :options="optionsDeliverys"
+              optionLabel="delivery"
+              :placeholder="optionsDelivery.name"
             />
           </div>
           <div class="field col-2">
@@ -22,6 +38,7 @@
               :placeholder="optionsPayment"
             />
           </div>
+
           <div class="field col-2">
             <label for="nit_ci">Nit/Ci</label>
             <InputText
@@ -50,8 +67,7 @@
               v-model="empresa"
             />
           </div>
-
-          <div class="field col-2">
+          <div class="field col-2"  v-if="infopersonal.sucursal == 17">
             <label for="contador_visitas"> Nro Visitas</label>
             <InputText
               id="contador_visitas"
@@ -60,7 +76,6 @@
               v-model="contador_visitas"
             />
           </div>
-
           <div class="field col-2">
             <label for="celular">Celular</label>
             <InputText
@@ -70,6 +85,17 @@
               v-model="celular"
             />
           </div>
+          <div class="field col-2" v-if="infopersonal.sucursal == 17" >
+            <label for="codigo">Codigo</label>
+            <InputText
+              id="codigo"
+              type="number"
+              placeholder="Codigo"
+              v-model="codigo"
+              v-on:keyup="searchClientePhone()"
+            />
+          </div>
+
         </div>
       </div>
     </div>
@@ -145,7 +171,7 @@
                       align-self-center
                       md:align-self-end
                     "
-                    >Bs. {{ slotProps.data.Precio }}</span
+                    >Precio: {{ slotProps.data.Precio }} Bs</span
                   >
                   <Button
                     icon="pi pi-shopping-cart"
@@ -156,8 +182,17 @@
             </div>
           </template>
           <template #grid="slotProps">
-            <div class="col-12 md:col-4">
-              <div class="card m-3 border-1 surface-border">
+            <div class="col-12 md:col-6">
+              <div
+                class="
+                  card
+                  m-1
+                  border-1
+                  surface-border
+                  justify-content-center
+                  align-items-center
+                "
+              >
                 <div class="text-center">
                   <img
                     :src="ruta + '' + slotProps.data.imagen"
@@ -168,15 +203,23 @@
                     {{ slotProps.data.Plato }}
                   </div>
                 </div>
-                <div class="flex align-items-center justify-content-between">
-                  <span class="text-1xl font-semibold product-badge"
-                    >Bs. {{ slotProps.data.Precio }}</span
-                  >
-                  <Button
-                    icon="pi pi-shopping-cart "
-                    style="font-size: 0.001rem"
-                    v-on:click="addPlate(slotProps.data)"
-                  ></Button>
+                <div class="flex align-items-center justify-content-center">
+                  <div class="row">
+                    <Button
+                     class="p-button-raised p-button-primary mr-2 mb-2"
+                      :label="'Venta N. ' + slotProps.data.Precio + ' Bs'"
+                      style="padding: 5px; margin-top: 5px"
+                      v-on:click="addPlateNormal(slotProps.data)"
+                    ></Button>
+                    <Button
+                      class="p-button-raised p-button-info mr-2 mb-2"
+                      :label="
+                        'Delivery ' + slotProps.data.PrecioDelivery + ' Bs'
+                      "
+                      style="padding: 5px; margin-top: 5px"
+                      v-on:click="addPlateDelivery(slotProps.data)"
+                    ></Button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -269,18 +312,39 @@
   <div id="content_qr" style="opacity: 0">
     <qrcode-vue :value="QRValue" size="80" level="H" />
   </div>
+
 </template>
 
 <script>
+import { inject } from 'vue';
 import ProductService from "../service/ProductService";
 import axios from "axios";
 import QrcodeVue from "qrcode.vue";
 import downloadPDF from "../utils/FacturaPDF.js";
+import downloadPDFP from "../utils/FacturaPersonal.js";
 import generateControlCode from "../utils/CodigoControl.js";
+
+
+
+
 
 export default {
   data() {
     return {
+      isVisibilityDeliverys: false,
+      optionsDelivery: { name: "PedidosYa" },
+      optionsDeliverys: [
+        { delivery: "PedidosYa" },
+        { delivery: "PatioService" },
+        { delivery: "Yaigo" },
+        { delivery: "MrDelivery" },
+        { delivery: "Km6" },
+        { delivery: "SuperHelper" },
+        { delivery: "OrdenYa" },
+        { delivery: "UbertEats" },
+      ],
+      nro_transaccion: 0,
+      codigo: "",
       datos_empresa: {
         nombre: "DONESCO SRL",
         celular: "78555410",
@@ -322,6 +386,7 @@ export default {
       empresa: "",
       celular: "",
       autorizacion: null,
+      infopersonal:[],
     };
   },
   components: {
@@ -332,6 +397,7 @@ export default {
     this.productService = new ProductService();
   },
   mounted() {
+    this.get_transaction();
     this.authenticacion();
     this.productService
       .getProducts()
@@ -345,22 +411,31 @@ export default {
   },
   methods: {
     authenticacion() {
-      if (localStorage.getItem("User") == null) {
+      
+      if (localStorage.getItem("User") == null || localStorage.getItem("User")=='undefined' ) {
         this.$router.push("/login");
+      }else{
+        this.infopersonal= JSON.parse( localStorage.getItem("User")  );
       }
-      if (localStorage.getItem("turnoId") == null) {
+
+      if (localStorage.getItem("turnoId") == null || localStorage.getItem("turnoId") == 'undefined') {
         //verified_turn
         this.$router.push("/turno");
-
-      }else{
-
-          let result = axios
-          .get("http://192.168.0.150/eerpwebv2/public/api/verified_turn?id_turno="+JSON.parse(localStorage.getItem("turnoId")))
+      } else {
+        let result = axios
+          .get(
+            this.url+"verified_turn?id_turno=" +
+              JSON.parse(localStorage.getItem("turnoId"))
+          )
           .then((res) => {
-             console.log(res);
-            if(res.data.success==false){
-                this.$router.push("/turno");
-            }                         
+            console.log(res);
+            if (res.data.success == false) {
+              this.$router.push("/turno");
+            } else {
+              if (localStorage.getItem("Orden") == null) {
+                localStorage.setItem("Orden", 1);
+              }
+            }
           })
           .catch((err) => {
             console.log(err);
@@ -389,7 +464,11 @@ export default {
     },
     getCategorias() {
       let result = axios
-        .get("http://192.168.0.150/eerpwebv2/public/api/getCategories")
+        .get(
+          this.url+"getCategories?" +
+            "sucursal_id=" +
+            JSON.parse(localStorage.getItem("User")).sucursal
+        )
         .then((res) => {
           this.sortOptions = res.data.categorias;
         })
@@ -400,16 +479,17 @@ export default {
     getPlates(id) {
       let result = axios
         .get(
-          "http://192.168.0.150/eerpwebv2/public/api/getPlates?" +
+          this.url+"getPlates?" +
             "categoria_plato_id=" +
             id +
             "&sucursal_id=" +
-             JSON.parse(localStorage.getItem("User")).sucursal
+            JSON.parse(localStorage.getItem("User")).sucursal
         )
         .then((res) => {
           console.log(res);
           if (res.data.plate.length > 0) {
             this.plates = res.data.plate;
+            console.log(this.plates);
           } else {
             this.plates = null;
           }
@@ -418,12 +498,21 @@ export default {
           console.log(err);
         });
     },
-    addPlate(data) {
+    addPlateNormal(data) {
       this.carrito.push({
         plato_id: data.id,
         plato: data.Plato,
         cantidad: 0,
         costo: data.Precio,
+        subtotal: 0,
+      });
+    },
+    addPlateDelivery(data) {
+      this.carrito.push({
+        plato_id: data.id,
+        plato: data.Plato,
+        cantidad: 0,
+        costo: data.PrecioDelivery,
         subtotal: 0,
       });
     },
@@ -485,6 +574,7 @@ export default {
           "|" +
           "0" +
           "|";
+
         datos_de_venta = {
           cliente: "SIN NOMBRE",
           nit_ci: 0,
@@ -492,15 +582,19 @@ export default {
           nro_autorizacion: this.autorizacion.nro_autorizacion,
           empresa: "SIN EMPRESA",
           telefono: 0,
+          delivery: this.optionsDelivery.delivery,
           total_venta: this.total.toFixed(2),
           tipo_pago: this.optionsPayment.name,
           lugar: this.optionsPlace.name,
           turno_id: turno_id,
           user_id: JSON.parse(localStorage.getItem("User")).user_id,
+          sucursal_nombre: JSON.parse(localStorage.getItem("User"))
+            .sucursal_nombre,
           detalle_venta: this.carrito,
           codigo_control: this.generarCodigoControl(codigoControl).toString(),
           qr: this.QRValue,
           sucursal: JSON.parse(localStorage.getItem("User")).sucursal,
+          orden: localStorage.getItem("Orden"),
         };
       } else {
         let codigoControl = {
@@ -512,6 +606,7 @@ export default {
           total_transaccion: this.total.toString(),
           llave_dosificacion: this.autorizacion.llave,
         };
+
         this.QRValue =
           this.datos_empresa.nit.toString() +
           "|" +
@@ -535,36 +630,43 @@ export default {
           "|" +
           "0" +
           "|";
+
         datos_de_venta = {
           cliente: this.cliente,
-          nit_ci: this.nit_ci,
+          nit_ci: this.nit_ci == "" ? 0 : this.nit_ci,
           nro_factura: this.autorizacion.nro_factura + 1,
           nro_autorizacion: this.autorizacion.nro_autorizacion,
-          empresa: this.empresa,
+          empresa: this.empresa == "" ? "SIN EMPRESA" : this.empresa,
           telefono: this.celular,
+          delivery: this.optionsDelivery.delivery,
           total_venta: this.total.toFixed(2),
           tipo_pago: this.optionsPayment.name,
           lugar: this.optionsPlace.name,
           turno_id: turno_id,
           user_id: JSON.parse(localStorage.getItem("User")).user_id,
+          sucursal_nombre: JSON.parse(localStorage.getItem("User"))
+            .sucursal_nombre,
           detalle_venta: this.carrito,
           codigo_control: this.generarCodigoControl(codigoControl).toString(),
           qr: this.QRValue,
           sucursal: JSON.parse(localStorage.getItem("User")).sucursal,
+          orden: localStorage.getItem("Orden"),
         };
       }
-      /* console.log(datos_de_venta); */
+
+      console.log(datos_de_venta);
+
       axios
         .post(
-          "http://192.168.0.150/eerpwebv2/public/api/sale_register",
+          this.url+"sale_register",
           datos_de_venta
         )
         .then((result) => {
-          //console.log(result);
           console.log(result.data);
           let visitas = result.data.cantidad_visitas;
-          //cantidad_visitas
+
           if (result.data.status) {
+            this.get_transaction();
             this.$swal.fire({
               position: "top-end",
               icon: "success",
@@ -572,7 +674,15 @@ export default {
               showConfirmButton: false,
               timer: 1500,
             });
-            downloadPDF(datos_de_venta, visitas);
+
+            if (this.optionsPayment.name == "Comida Personal") {
+              this.sale_personal(datos_de_venta, 0);
+            } else {
+              downloadPDF(datos_de_venta, visitas);
+            }
+
+            let ord = localStorage.getItem("Orden");
+            localStorage.setItem("Orden", Number(ord) + 1);
           } else {
             this.$swal.fire({
               position: "top-end",
@@ -584,13 +694,16 @@ export default {
           }
         });
     },
-
+    sale_personal(datos, visitas) {
+      console.log("prueba");
+      downloadPDFP(datos, visitas);
+    },
     searchCliente() {
       console.log(this.nit_ci);
       if (this.nit_ci != "") {
         let result = axios
           .get(
-            "http://192.168.0.150/eerpwebv2/public/api/filter_client?codigo=" +
+            this.url+"filter_client?codigo=" +
               this.nit_ci
           )
           .then((res) => {
@@ -616,6 +729,7 @@ export default {
         this.empresa = "";
       }
     },
+
     generarCodigoControl(codigo_control) {
       return generateControlCode(
         codigo_control.nro_autorizacion,
@@ -626,11 +740,12 @@ export default {
         codigo_control.llave_dosificacion
       );
     },
+
     getAutorizacion() {
       let sucursal_id = JSON.parse(localStorage.getItem("User")).sucursal;
       let result = axios
         .get(
-          "http://192.168.0.150/eerpwebv2/public/api/getAutorization?" +
+          this.url+"getAutorization?" +
             "sucursal_id=" +
             sucursal_id
         )
@@ -640,14 +755,16 @@ export default {
         })
         .catch((err) => {
           console.log(err);
-        });
+        });              
     },
+
+    getUserData() {},
     redondear(monto) {
       let _monto = monto.toFixed(1);
       let dato = _monto.toString();
       let ultimo = _monto.toString().charAt(dato.length - 1);
-      console.log("dato: ",dato);
-      console.log("ultimo: ",ultimo);
+      console.log("dato: ", dato);
+      console.log("ultimo: ", ultimo);
       if (parseInt(ultimo) > 5) {
         _monto = Math.round(_monto);
         console.log(_monto);
@@ -656,13 +773,72 @@ export default {
           _monto = Math.round(_monto);
           console.log(_monto);
         } else {
-          _monto = Math.round(_monto)+ ".50" ;
+          _monto = Math.round(_monto) + ".50";
           console.log(_monto);
         }
       }
       return _monto;
     },
+    searchClientePhone() {
+      if (this.codigo != "") {
+        let result = axios
+          .get(
+            this.url+"filter_client_phone?celular=" +
+              this.codigo
+          )
+          .then((res) => {
+            console.log(res);
+            let retorn = res.data;
+            if (retorn.success) {
+              this.nit_ci = retorn.cliente.ci_nit;
+              this.celular = retorn.cliente.telefono;
+              this.cliente = retorn.cliente.nombre;
+              this.empresa = retorn.cliente.empresa;
+              this.contador_visitas = retorn.cliente.contador_visitas;
+            } else {
+              this.celular = "";
+              this.cliente = "";
+              this.empresa = "";
+              this.contador_visitas = "";
+            }
+          })
+          .catch((err) => {
+            console.log(err);
+          });
+      } else {
+        this.celular = "";
+        this.cliente = "";
+
+        this.empresa = "";
+      }
+    },
+    get_transaction() {
+      let result = axios
+        .get(
+          this.url+"get_transaction?turno_id=" +
+            JSON.parse(localStorage.getItem("turnoId"))
+        )
+        .then((res) => {
+          console.log(res.data);
+          this.nro_transaccion = res.data.nro_transaccion;
+        });
+    },
+    mostrarDeliverys() {
+      console.log(this.optionsPlace.name);
+
+      if (this.optionsPlace.name == "Delivery") {
+        this.isVisibilityDeliverys = true;
+      } else {
+        this.isVisibilityDeliverys = false;
+      }
+    },
   },
+  setup() {
+    const url = inject('url');  
+    return {
+      url
+    }
+  }
 };
 </script>
 <style scoped lang="scss">

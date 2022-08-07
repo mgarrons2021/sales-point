@@ -107,7 +107,7 @@
   </form>
 </template>
 <script>
-import Vue from "vue";
+import  { inject }  from "vue";
 import axios from "axios";
 
 export default {
@@ -208,7 +208,7 @@ export default {
       };
       axios
       .post(
-        "http://192.168.0.150/eerpwebv2/public/api/login_sales",
+        this.url+"login_sales",
         codigo_auth
       )
       .then((result) => {
@@ -216,8 +216,6 @@ export default {
 
           localStorage.setItem('User', JSON.stringify(result.data)  );
           this.$router.push("/turno");
-         
-
         }else {
           console.log(result.data.name);
         }
@@ -236,6 +234,12 @@ export default {
     },
     components: {},
   },
+  setup() {
+    const url = inject('url');  
+    return {
+      url
+    }
+  }
 };
 </script>
 

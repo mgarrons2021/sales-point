@@ -103,9 +103,6 @@ import VueSweetalert2 from 'vue-sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 
 router.beforeEach(function(to, from, next) {
-    console.log(from);
-    console.log(to);
-    console.log(router);
     window.scrollTo(0, 0);
     if( localStorage.getItem('User')==null ){
       //router.replace({name: 'login'});
@@ -120,7 +117,7 @@ router.beforeEach(function(to, from, next) {
 });
 
 const app = createApp(AppWrapper);
-
+app.provide('url', 'http://192.168.0.150/eerpwebv2/public/api/');
 app.config.globalProperties.$appState = reactive({ theme: 'lara-light-indigo', darkTheme: false });
 
 app.use(PrimeVue, { ripple: true, inputStyle: 'outlined' });
