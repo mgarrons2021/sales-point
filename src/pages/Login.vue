@@ -1,3 +1,4 @@
+
 <template>
   <form action class="form" @submit.prevent="login" id="app">
     <div
@@ -8,10 +9,11 @@
         justify-content-center
         min-h-screen min-w-screen
         overflow-hidden
+      
       "
     >
       <div
-        class="grid justify-content-center p-2 lg:p-0"
+        class="card grid justify-content-center p-2 lg:p-0"
         style="min-width: 80%"
       >
         <div
@@ -39,15 +41,15 @@
           >
             <div class="text-center mb-5">
               <img
-                src="layout/images/avatar.png"
+                src="layout/images/favicon.ico"
                 alt="Image"
-                height="50"
+                height="100"
                 class="mb-3"
               />
               <div class="text-900 text-3xl font-medium mb-3">
                 MAGNOREST
               </div>
-              <span class="text-600 font-medium">Comienza ahora..</span>
+          
             </div>
 
             <div class="w-full md:w-10 mx-auto">
@@ -70,29 +72,7 @@
                 id="codigo"
                 style="padding: 1rem"
                 placeholder="Ingrese Codigo"/>
-
-              <div class="flex align-items-center justify-content-between mb-5">
-                <div class="flex align-items-center">
-                  <Checkbox
-                    id="rememberme1"
-                    v-model="checked"
-                    :binary="true"
-                    class="mr-2"
-                  ></Checkbox>
-                  <label for="rememberme1">Recuerdame</label>
-                </div>
-                <a
-                  class="
-                    font-medium
-                    no-underline
-                    ml-2
-                    text-right
-                    cursor-pointer
-                  "
-                  style="color: var(--blue-color)"
-                  >Olvidaste tu contraseña?</a
-                >
-              </div>
+                <span class="m-5 font-medium text-xl font-danger " :style="textoerror ?'display:block;color:red;':'display:none;color:red;'" >Datos invalidos</span>
               <Button
                 class="form-submit w-full p-3 text-xl"
                 label="Ingresa"
@@ -106,14 +86,19 @@
     </div>
   </form>
 </template>
+
 <script>
+
 import  { inject }  from "vue";
 import axios from "axios";
+import  prints from "../utils/printerFuntions.js";
 
 export default {
   data: () => ({
     codigo: "",
     error: false,
+    textoerror:false,
+    objprint:'',
     notificationSystem: {
       options: {
         show: {
@@ -206,21 +191,24 @@ export default {
       let codigo_auth = {
         codigo: this.codigo,
       };
+      
+      prints();
+      
       axios
       .post(
         this.url+"login_sales",
-        codigo_auth
-      )
+        codigo_auth)
       .then((result) => {
-        if (result.data["token"] != "") {
-
+        console.log(result)
+        if (result.data["error"] ==null) {
+          this.textoerror=false;
           localStorage.setItem('User', JSON.stringify(result.data)  );
           this.$router.push("/turno");
         }else {
-          console.log(result.data.name);
+          this.textoerror=true;
         }
-      });
-      
+      });                  
+
     },
 
     computed: {
@@ -231,6 +219,7 @@ export default {
     },
     mounted() {
       //   this.$toast.show("Welcome!", "Hey", this.notificationSystem.options.show);
+     // this.objprint=new ConectorPlugin();
     },
     components: {},
   },
@@ -241,19 +230,21 @@ export default {
     }
   }
 };
+                                                               
 </script>
 
+                                                                          
 <style scoped>
 .pi-eye {
   transform: scale(1.6);
   margin-right: 1rem;
 }
-
+                                                                   
 .pi-eye-slash {
   transform: scale(1.6);
   margin-right: 1rem;
 }
-
+                                                                   
 #app {
   font-family: "Avenir", Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -261,4 +252,7 @@ export default {
   text-align: center;
   color: #2c3e50;
 }
+                                                                       
 </style>
+                                  
+   

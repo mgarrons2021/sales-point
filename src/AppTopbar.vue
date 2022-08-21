@@ -8,7 +8,7 @@
     </button>
     <Button
       label="CERRAR TURNO"
-      :style="!isVisibilityButtonCloseTurn ? 'display:block' : 'display:none'"
+      :style="isVisibilityButtonCloseTurn ? 'display:block' : 'display:none'"
       class="p-button-danger ml-5"
       @click="closeTurn()"
     />
@@ -112,10 +112,11 @@ export default {
     check_open_turn() {
       let turno_id = localStorage.getItem('turnoId');
 	  console.log("Turno Existe :  "+(turno_id!=null).toString());
-	  if(turno_id!=null){
-              this.isVisibilityButtonCloseTurn = false;
- 
-	  }
+	  if(turno_id==null){
+      this.isVisibilityButtonCloseTurn = false; 
+	  }else{
+      this.isVisibilityButtonCloseTurn = true;
+    }
     },
     returnPerson() {
       this.infopersonal = JSON.parse(localStorage.getItem("User"));

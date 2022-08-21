@@ -1,4 +1,4 @@
-  <template>
+<template>
   <div class="col-12 md:col-12">
     <div class="card p-fluid">
       <h5>Filtrar ventas</h5>
@@ -36,6 +36,33 @@
         class="p-datatable-gridlines"
         responsiveLayout="scroll"
       >
+        <Column :style="{ width: '50px' }" header="Nro" field="nro">
+          <template #body="slotProps">
+            <a>{{ slotProps.data.nro_registro }}</a>
+          </template>
+        </Column>
+        <Column
+          :style="{ width: '150px' }"
+          header="Nro de Factura"
+          field="nro_factura"
+        >
+          <template #body="slotProps">
+            <td style="" class="text-bold">
+              {{ slotProps.data.numero_factura }}
+            </td>
+          </template>
+        </Column>
+        <Column
+          :style="{ width: '150px' }"
+          header="Nro de Transaccion"
+          field="nro_transaccion"
+        >
+          <template #body="slotProps">
+            <td style="" class="text-bold">
+              {{ slotProps.data.nro_transaccion }}
+            </td>
+          </template>
+        </Column>
         <Column :style="{ width: '150px' }" header="Fecha" field="fecha_venta">
           <template #body="slotProps">
             <td style="" class="text-bold">
@@ -46,44 +73,89 @@
             </td>
           </template>
         </Column>
-
+        <Column
+          field="user"
+          header="Usuario"
+          :style="{ width: '150px' }"
+          frozen
+        ></Column>
         <Column
           field="tipo_pago"
           header="Tipo Pago"
           :style="{ width: '150px' }"
           frozen
         ></Column>
+        <Column :style="{ width: '150px' }" header="Turno" field="turno">
+          <template #body="slotProps">
+            <td style="" class="text-bold">
+              {{ slotProps.data.turno == 0 ? "AM" : "PM" }}
+            </td>
+          </template>
+        </Column>
+        <Column :style="{ width: '150px' }" header="Lugar" field="lugar">
+          <template #body="slotProps">
+            <td style="" class="text-bold">
+              {{ slotProps.data.lugar }}
+            </td>
+          </template>
+        </Column>
         <Column
           field="total_venta"
           header="Total Venta"
-          :style="{ width: '150px' }"
-        >
+          :style="{ width: '150px' }" >
           <template #body="slotProps">
-            <td>{{ slotProps.data.total_venta }} Bs</td>
+            <td>{{ parseFloat(slotProps.data.total_venta).toFixed(2) }} Bs</td>
           </template>
         </Column>
         <Column
           field="estado"
           header="Estado"
           :style="{ width: '150px' }"
-          frozen
-        >
+          frozen >
+
           <template #body="slotProps">
-            <td style="text-align: right" class="text-bold">
+            <td
+              style="text-align: right"
+              class="text-bold"
+              v-if="rol == 1 || rol == 5" >            
               <Button
                 v-if="slotProps.data.estado == 0"
                 label="ANULADO"
                 icon="pi pi-info-circle"
                 class="mr-2 mb-2 p-button-danger"
-                v-on:click="cambiarEstado(slotProps.data.id, 'ACTIVADO', 1,slotProps.data.turno)"
+                v-on:click="
+                  cambiarEstado(
+                    slotProps.data.id,
+                    'ACTIVADO',
+                    1,
+                    slotProps.data.turno
+                  )
+                "
               />
               <Button
                 v-else
                 label="ACTIVO"
                 icon="pi pi-check-circle"
                 class="mr-2 mb-2 p-button-info"
-                v-on:click="cambiarEstado(slotProps.data.id, 'ANULADO', 0 ,slotProps.data.turno )"
+                v-on:click="
+                  cambiarEstado(
+                    slotProps.data.id,
+                    'ANULADO',
+                    0,
+                    slotProps.data.turno
+                  )
+                "
               />
+            </td>
+            <td v-else style="text-align: right">
+              <span
+                :class="'customer-badge status-qualified'"
+                v-if="slotProps.data.estado == 1" >
+                Activo
+              </span>
+              <span :class="'customer-badge status-unqualified'" v-else>
+                Anulado
+              </span>
             </td>
           </template>
         </Column>
@@ -113,14 +185,33 @@
         <h3>DETALLE VENTA</h3>
       </template>
     </modal>
-    <div id="content_qr" style="opacity: 0">
-      <qrcode-vue id="qr" :value="QRValue" size="80" level="H" />
+  </div>
+
+  <div class="col-12 md:col-12">
+    <div class="card p-fluid">
+      <div class="grid">
+        <div class="field col-2">Total Anulados</div>
+        <div class="field col-2">{{ totales_finales[1] }} bs.</div>
+        <div class="field col-2">Total Turno</div>
+        <div class="field col-2">{{ totales_finales[2] }} bs.</div>
+        <div class="field col-2">Comida Personal</div>
+        <div class="field col-2">{{ totales_finales[0] }} bs.</div>
+      </div>
+      <div class="grid">
+        <div class="field col-10">Total</div>
+        <div class="field col-2">
+          {{ totales_finales[2] - (totales_finales[1] + totales_finales[0]) }}
+          bs.
+        </div>
+      </div>
     </div>
+  </div>
+
+  <div id="content_qr" style="opacity: 0">
+    <qrcode-vue id="qr" :value="QRValue" size="200" level="L" />
   </div>
 </template>
 <script>
-
-
 import ProductService from "../service/ProductService";
 import axios from "axios";
 import QrcodeVue from "qrcode.vue";
@@ -128,7 +219,7 @@ import Modal from "../components/Carrito.vue";
 import downloadPDF from "../utils/FacturaPDF.js";
 import downloadPDFP from "../utils/FacturaPersonal.js";
 import generateControlCode from "../utils/CodigoControl.js";
-import { inject } from 'vue';
+import { inject } from "vue";
 
 export default {
   name: "sales",
@@ -140,10 +231,17 @@ export default {
       detail: "",
       showModal: false,
       QRValue: "",
+      autorizacion: null,
+      totales_finales: [0, 0, 0],
+      rol: 0,
     };
+  },
+  created() {
+    this.getAutorizacion();
   },
   mounted() {
     this.authenticacion();
+    this.getAutorizacion();
     this.getSales(
       new Date(Date.now()).getFullYear() +
         "-" +
@@ -162,12 +260,15 @@ export default {
     authenticacion() {
       if (localStorage.getItem("User") == null) {
         this.$router.push("/login");
+      } else {
+        this.rol = JSON.parse(localStorage.getItem("User")).rol;
       }
     },
     getSales(inicio, fin, sucursal) {
       axios
         .get(
-          this.url+"sales_lists?fecha_inicio='" +
+          this.url +
+            "sales_lists?fecha_inicio='" +
             inicio +
             "'&fecha_fin='" +
             fin +
@@ -176,8 +277,17 @@ export default {
         )
         .then((result) => {
           if (result.data.success) {
-            //console.log(result);
             this.ventas = result.data.sale;
+
+            for (let i = 0; i < this.ventas.length; i++) {
+              if (this.ventas[i].tipo_pago == "Comida Personal") {
+                this.totales_finales[0] += Number(this.ventas[i].total_venta);
+              } else if (this.ventas[i].estado == 0) {
+                this.totales_finales[1] += Number(this.ventas[i].total_venta);
+              } else {
+                this.totales_finales[2] += Number(this.ventas[i].total_venta);
+              }
+            }
           } else {
             this.ventas = [];
           }
@@ -186,7 +296,7 @@ export default {
           console.log(e);
         });
     },
-    cambiarEstado( id, estado, cod_estado , turno ) {
+    cambiarEstado(id, estado, cod_estado, turno) {
       this.$swal
         .fire({
           title: "Cambiar estado ?",
@@ -198,15 +308,16 @@ export default {
           confirmButtonText: "Si cambiar",
         })
         .then((result) => {
-
           if (result.isConfirmed) {
-
             axios
               .get(
-                this.url+"change_status_sale?id_venta=" +
+                this.url +
+                  "change_status_sale?id_venta=" +
                   id +
                   "&estado=" +
-                  cod_estado+"&turno="+turno
+                  cod_estado +
+                  "&turno=" +
+                  turno
               )
               .then((result) => {
                 if (result.data.success) {
@@ -243,17 +354,12 @@ export default {
               .catch((e) => {
                 console.log(e);
               });
-            
           }
-
         });
     },
     showDetails(id) {
       axios
-        .get(
-          this.url+"sales_lists_detail?venta_id=" +
-            id
-        )
+        .get(this.url + "sales_lists_detail?venta_id=" + id)
         .then((result) => {
           if (result.data.success) {
             this.detail = result.data.sales_detail;
@@ -279,17 +385,26 @@ export default {
       );
     },
 
+    getAutorizacion() {
+      let sucursal_id = JSON.parse(localStorage.getItem("User")).sucursal;
+      let result = axios
+        .get(this.url + "getAutorization?" + "sucursal_id=" + sucursal_id)
+        .then((res) => {
+          this.autorizacion = JSON.parse(res.data.autorizaciones);
+          console.log(this.autorizacion);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    },
+
     print_pdf(id_venta, tipo_pago) {
-     
       if (tipo_pago == "Comida Personal") {
         axios
-          .get(
-            this.url+"sales_for_id_personal?id=" +
-              id_venta
-          )
+          .get(this.url + "sales_for_id_personal?id=" + id_venta)
           .then((result) => {
             if (result.data.success) {
-               this.QRValue = result.data.ventas.qr;
+              this.QRValue = result.data.ventas.qr;
               console.log(result.data);
               let ventas = result.data.venta_detalle;
               let detalles = [];
@@ -298,15 +413,15 @@ export default {
                 detalles.push({
                   cantidad: ventas[i].cantidad,
                   plato: ventas[i].nombre,
-                  costo: ventas[i].precio,
-                  subtotal: ventas[i].subtotal,
+                  costo: parseFloat( ventas[i].precio).toFixed(2),
+                  subtotal:  parseFloat( ventas[i].subtotal).toFixed(2),
                 });
               }
 
               let datos_de_venta = {
                 cliente: result.data.ventas.nombre,
                 nit_ci: result.data.ventas.ci_nit,
-                total_venta: result.data.ventas.total_venta,
+                total_venta: parseFloat(result.data.ventas.total_venta).toFixed(2),
                 tipo_pago: result.data.ventas.tipo_pago,
                 detalle_venta: detalles,
                 fecha:
@@ -315,9 +430,9 @@ export default {
                   result.data.ventas.hora_venta,
                 orden: 0,
                 sucursal_nombre: result.data.ventas.sucursal,
-                sucursal:result.data.ventas.sucursal
+                sucursal: result.data.ventas.sucursal,
               };
-
+              //console.log(datos_de_venta)
               downloadPDFP(datos_de_venta, 0);
             } else {
               console.log(result.data);
@@ -328,13 +443,10 @@ export default {
           });
       } else {
         axios
-          .get(
-            this.url+"sales_for_id?id=" +
-              id_venta
-          )
+          .get(this.url + "sales_for_id?id=" + id_venta)
           .then((result) => {
             if (result.data.success) {
-              console.log("result de api: ",result.data);
+              console.log("result de api: ", result.data);
               this.QRValue = result.data.ventas.qr;
               let ventas = result.data.venta_detalle;
               let detalles = [];
@@ -343,8 +455,8 @@ export default {
                 detalles.push({
                   cantidad: ventas[i].cantidad,
                   plato: ventas[i].nombre,
-                  costo: ventas[i].precio,
-                  subtotal: ventas[i].subtotal,
+                  costo:  parseFloat(ventas[i].precio).toFixed(2),
+                  subtotal: parseFloat(ventas[i].subtotal).toFixed(2),
                 });
               }
 
@@ -357,20 +469,21 @@ export default {
                   result.data.ventas.telefono == null
                     ? 0
                     : result.data.ventas.telefono,
-                total_venta: result.data.ventas.total_venta,
+                total_venta: parseFloat(result.data.ventas.total_venta).toFixed(2),
                 tipo_pago: result.data.ventas.tipo_pago,
                 detalle_venta: detalles,
                 codigo_control: result.data.ventas.codigo_control,
                 qr: this.QRValue,
-                sucursal:result.data.ventas.sucursal,
+                sucursal: result.data.ventas.sucursal,
+                sucursal_nombre: result.data.ventas.sucursal_nombre,
               };
-              
-              setTimeout(function (){
-                downloadPDF(datos_de_venta, result.data.ventas.contador_visitas);
+              let autorizacion = this.autorizacion;
+              console.log(autorizacion);
+              setTimeout(function () {
+                console.log(autorizacion);
+                downloadPDF(datos_de_venta, autorizacion, 0);
               }, 1);
-
-              
-            } 
+            }
           })
           .catch((e) => {
             console.log(e);
@@ -380,17 +493,16 @@ export default {
   },
   components: {
     Modal,
-   QrcodeVue,
+    QrcodeVue,
   },
   setup() {
-    const url = inject('url');  
+    const url = inject("url");
     return {
-      url
-    }
-  }
+      url,
+    };
+  },
 };
 </script>
 <style scoped lang="scss">
 @import "../assets/demo/badges.scss";
-</style> 
-
+</style>

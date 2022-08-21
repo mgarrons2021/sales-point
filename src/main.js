@@ -7,7 +7,6 @@ import './assets/demo/flags/flags.css';
 import 'izitoast/dist/css/iziToast.css';
 import FlashMessage from '@smartweb/vue-flash-message';
 
-
 import { createApp, reactive } from 'vue';
 import router from './router';
 import AppWrapper from './AppWrapper.vue';
@@ -98,7 +97,6 @@ import TreeTable from 'primevue/treetable';
 import TriStateCheckbox from 'primevue/tristatecheckbox';
 import CodeHighlight from './AppCodeHighlight';
 import BlockViewer from './BlockViewer';
-
 import VueSweetalert2 from 'vue-sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 
@@ -209,8 +207,9 @@ app.component('ToggleButton', ToggleButton);
 app.component('Tree', Tree);
 app.component('TreeSelect', TreeSelect);
 app.component('TreeTable', TreeTable);
+
 app.component('TriStateCheckbox', TriStateCheckbox);
 
 app.component('BlockViewer', BlockViewer);
 
-app.mount('#app');
+app.mount('#app');            

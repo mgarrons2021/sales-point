@@ -37,7 +37,7 @@
       >
         <Column :style="{ width: '50px' }" header="Nro" field="nro">
           <template #body="slotProps">
-            <a>{{ slotProps.data.id }}</a>
+            <a>{{ slotProps.data.nro_registro }}</a>
           </template>
         </Column>
         <Column
@@ -46,7 +46,7 @@
           field="sucursal_nombre"
         >
           <template #body="slotProps">
-            <a>{{ slotProps.data.sucursal_nombre }}</a>
+            <span>{{ slotProps.data.sucursal_nombre }}</span  >
           </template>
         </Column>
         <Column
@@ -55,12 +55,12 @@
           field="nombre_usuario"
         >
           <template #body="slotProps">
-            <a>{{ slotProps.data.nombre_usuario }}</a>
+            <span>{{ slotProps.data.nombre_usuario }}</span>
           </template>
         </Column>
         <Column :style="{ width: '50px' }" header="Fecha" field="fecha">
           <template #body="slotProps">
-            <a>{{ slotProps.data.fecha }}</a>
+            <span>{{ slotProps.data.fecha }}</span>
           </template>
         </Column>
         <Column field="turno" header="Turno" :style="{ width: '50px' }" frozen>
@@ -81,7 +81,7 @@
           frozen
         >
           <template #body="slotProps">
-            <td style="text-align: right">
+            <td style="text-align: right" v-if="rol == 1 || rol == 5">
               <Button
                 v-if="slotProps.data.estado == 0"
                 label="Turno Cerrado"
@@ -97,6 +97,17 @@
                 v-on:click="updateState(slotProps.data.id, 'Cerrar')"
               />
             </td>
+            <td style="text-align: right" v-else>
+              <span
+                :class="'customer-badge status-unqualified'"
+                v-if="slotProps.data.estado == 0"
+              >
+                Turno Cerrado
+              </span>
+              <span :class="'customer-badge status-qualified'" v-else>
+                Turno Abierto
+              </span>
+            </td>
           </template>
         </Column>
         <Column
@@ -108,11 +119,7 @@
             <Button
               icon="pi pi-file-pdf"
               label="V.F."
-              class="
-                mr-2
-                mb-2
-                p-button-rounded p-button-outlined p-button-danger
-              "
+              class="mr-2 mb-2 p-button-rounded p-button-outlined p-button-danger"
               v-on:click="get_tax_sales(slotProps.data.id)"
             />
           </template>
@@ -132,15 +139,28 @@
       <template #header> </template>
     </modal>
   </div>
+
+  <div class="col-12 md:col-12">
+    <div class="card p-fluid">
+      <div class="grid">
+        <div class="field col-10">Total</div>
+        <div class="field col-2">
+          {{ total_ventas }}
+          bs.
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 <script>
 import axios from "axios";
 import Modal from "../components/Carrito.vue";
 import downloadPDF from "../utils/VFiscalesPDF.js";
 import CierreTurnoPDF from "../utils/CierreTurnoPDF.js";
-import { inject } from 'vue';
+import { inject } from "vue";
 
 //pi-eye
+
 export default {
   name: "turns",
   data() {
@@ -152,6 +172,8 @@ export default {
       detail: "",
       showModal: false,
       sale_tax: null,
+      rol: 0,
+      total_ventas: 0,
     };
   },
   mounted() {
@@ -174,15 +196,19 @@ export default {
     authenticacion() {
       if (localStorage.getItem("User") == null) {
         this.$router.push("/login");
+      } else {
+        this.rol = JSON.parse(localStorage.getItem("User")).rol;
       }
     },
 
     //API para obtener las ventas fiscales de un determinado turno de una determinada sucursal
 
     get_tax_sales(turno_id) {
-      axios
+      console.log('turno ' + turno_id);
+        axios
         .get(
-          this.url+"get_tax_sales?turno_id=" +
+          this.url +
+            "get_tax_sales?turno_id=" +
             turno_id +
             "&sucursal_id=" +
             JSON.parse(localStorage.getItem("User")).sucursal
@@ -197,8 +223,9 @@ export default {
             hora_inicio: result.data.hora_inicio,
             hora_fin: result.data.hora_fin,
             turno: result.data.turno,
+            primera_venta: result.data.primera_venta==null?0:result.data.primera_venta.numero_factura,
+            ultima_venta: result.data.ultima_venta==null?0:result.data.ultima_venta.numero_factura,
           };
-          /*  console.log(result.data); */
           downloadPDF(this.sale_tax, datos_extras);
         })
         .catch((e) => {
@@ -210,7 +237,8 @@ export default {
     print_pdf(turno_id) {
       axios
         .get(
-          this.url+"obtener_ventas_turno?turno_id=" +
+          this.url +
+            "obtener_ventas_turno?turno_id=" +
             turno_id +
             "&sucursal_id=" +
             JSON.parse(localStorage.getItem("User")).sucursal
@@ -246,7 +274,8 @@ export default {
     getListTurn(inicio, fin, sucursal) {
       axios
         .get(
-          this.url+"list_turns?fecha_inicio='" +
+          this.url +
+            "list_turns?fecha_inicio='" +
             inicio +
             "'&fecha_fin='" +
             fin +
@@ -254,7 +283,15 @@ export default {
             sucursal
         )
         .then((result) => {
+          console.log("turnos :", result.data.turns);
           this.ventas = result.data.turns;
+          this.ventas.forEach((venta) => {
+            console.log(venta);
+            if (venta.ventas != null) {
+              this.total_ventas += parseFloat(venta.ventas);
+            }
+          });
+          console.log(this.total_ventas);
         })
         .catch((e) => {
           console.log(e);
@@ -291,10 +328,7 @@ export default {
           };
           if (result.isConfirmed) {
             axios
-              .post(
-                this.url+"update_state_turn",
-                data
-              )
+              .post(this.url + "update_state_turn", data)
               .then((result) => {
                 if (result.data.status) {
                   this.$swal.fire({
@@ -336,11 +370,11 @@ export default {
     Modal,
   },
   setup() {
-    const url = inject('url');  
+    const url = inject("url");
     return {
-      url
-    }
-  }
+      url,
+    };
+  },
 };
 </script>
 <style scoped lang="scss">

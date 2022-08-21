@@ -44,7 +44,12 @@ export default function downloadPDF(datos,datos_extra) {
       salto += 4;
     });
 
-    pdf.text("Total Fiscal :        "+ parseFloat(total_fiscal).toFixed(2), 2, salto+5);
+    salto+=5;
+    pdf.text("Total Fiscal :        "+ parseFloat(total_fiscal).toFixed(2), 2, salto);
+    salto+=6;
+    pdf.text("Primera factura :        "+datos_extra.primera_venta,  2, salto);
+    salto+=5;
+    pdf.text("Ultima factura :        "+datos_extra.ultima_venta  , 2, salto);
 
 
 

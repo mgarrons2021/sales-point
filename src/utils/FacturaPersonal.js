@@ -63,6 +63,8 @@ export default function downloadPDFP(datos, visita) {
   
       /*  doc.save("comprobanteVenta.pdf"); */
       var string = pdf.output("datauristring");
+
+
       var embed =
         "<embed width='100%' height='100%' src='" + string + "'><embed/>";
       var x = window.open();

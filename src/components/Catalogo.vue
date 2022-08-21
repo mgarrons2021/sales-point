@@ -2,10 +2,20 @@
   <div class="grid">
     <div class="col-12">
       <div class="card p-fluid">
-        <h5>
-          Formulario de Registro - Nro de Transaccion:
-          {{ this.nro_transaccion + 1 }}
-        </h5>
+        <div class="formgrid grid" :style="'display: flex;width:100%;'">
+          <div class="field col-10">
+            <h5 :style="'text-align:left;clear: both; '">
+              Formulario de Registro - Nro de Transaccion:
+              {{ this.nro_transaccion + 1 }}
+            </h5>
+          </div>
+          <div class="field col-2" v-if="infopersonal.sucursal == 18">
+            <h5 :style="'text-align:right'">
+              Nro Visitas: {{ contador_visitas }}
+            </h5>
+          </div>
+        </div>
+
         <div class="formgrid grid">
           <div class="field col-2">
             <label for="lugar">Lugar</label>
@@ -67,15 +77,6 @@
               v-model="empresa"
             />
           </div>
-          <div class="field col-2"  v-if="infopersonal.sucursal == 17">
-            <label for="contador_visitas"> Nro Visitas</label>
-            <InputText
-              id="contador_visitas"
-              type="number"
-              placeholder=""
-              v-model="contador_visitas"
-            />
-          </div>
           <div class="field col-2">
             <label for="celular">Celular</label>
             <InputText
@@ -85,7 +86,7 @@
               v-model="celular"
             />
           </div>
-          <div class="field col-2" v-if="infopersonal.sucursal == 17" >
+          <div class="field col-2" v-if="infopersonal.sucursal == 18">
             <label for="codigo">Codigo</label>
             <InputText
               id="codigo"
@@ -95,13 +96,18 @@
               v-on:keyup="searchClientePhone()"
             />
           </div>
-
         </div>
       </div>
     </div>
     <div class="col-6">
       <div class="card">
         <h5>Platos Ofertados</h5>
+        <TabMenu :model="categorias2" >
+          <template #item="{ item }">
+            <Button class="p-button-outlined p-button-secondary" @click="onSortChange(item.id)" :label="item.label"></Button>
+          </template>
+        </TabMenu>
+        
         <DataView
           :value="plates"
           :layout="layout"
@@ -110,77 +116,6 @@
           :sortOrder="sortOrder"
           :sortField="sortField"
         >
-          <template #header="">
-            <div class="grid grid-nogutter">
-              <div class="col-6 text-left">
-                <Dropdown
-                  v-model="sortKey"
-                  :options="sortOptions"
-                  optionLabel="nombre"
-                  placeholder="Seleccione una Categoria"
-                  @change="onSortChange($event)"
-                />
-              </div>
-              <div class="col-6 text-right">
-                <DataViewLayoutOptions v-model="layout" />
-              </div>
-            </div>
-          </template>
-          <template #list="slotProps">
-            <div class="col-12">
-              <div
-                class="
-                  flex flex-column
-                  md:flex-row
-                  align-items-center
-                  p-3
-                  w-full
-                "
-              >
-                <img
-                  :src="ruta + '' + slotProps.data.imagen"
-                  :alt="slotProps.data.nombre"
-                  class="my-4 md:my-0 w-9 md:w-10rem shadow-2 mr-5"
-                />
-                <div class="flex-1 text-center md:text-left">
-                  <div class="font-bold text-2xl">
-                    {{ slotProps.data.Plato }}
-                  </div>
-                  <div class="flex align-items-center">
-                    <i class="pi pi-tag mr-2"></i>
-                  </div>
-                </div>
-                <div
-                  class="
-                    flex flex-row
-                    md:flex-column
-                    justify-content-between
-                    w-full
-                    md:w-auto
-                    align-items-center
-                    md:align-items-end
-                    mt-5
-                    md:mt-0
-                  "
-                >
-                  <span
-                    class="
-                      text-2xl
-                      font-semibold
-                      mb-2
-                      align-self-center
-                      md:align-self-end
-                    "
-                    >Precio: {{ slotProps.data.Precio }} Bs</span
-                  >
-                  <Button
-                    icon="pi pi-shopping-cart"
-                    label="Add to Cart"
-                  ></Button>
-                </div>
-              </div>
-            </div>
-          </template>
           <template #grid="slotProps">
             <div class="col-12 md:col-6">
               <div
@@ -206,7 +141,7 @@
                 <div class="flex align-items-center justify-content-center">
                   <div class="row">
                     <Button
-                     class="p-button-raised p-button-primary mr-2 mb-2"
+                      class="p-button-raised p-button-primary mr-2 mb-2"
                       :label="'Venta N. ' + slotProps.data.Precio + ' Bs'"
                       style="padding: 5px; margin-top: 5px"
                       v-on:click="addPlateNormal(slotProps.data)"
@@ -238,7 +173,7 @@
           scrollDirection="both"
           class="mt-2"
         >
-          <Column :style="{ width: '150px' }" header=" ">
+          <Column :style="{ width: '50px' }" header=" ">
             <template #body="slotProps">
               <td style="text-align: right" class="text-bold">
                 <Button
@@ -310,13 +245,12 @@
     </div>
   </div>
   <div id="content_qr" style="opacity: 0">
-    <qrcode-vue :value="QRValue" size="80" level="H" />
+    <qrcode-vue :value="QRValue" size="200" level="L" />
   </div>
-
 </template>
 
 <script>
-import { inject } from 'vue';
+import { inject } from "vue";
 import ProductService from "../service/ProductService";
 import axios from "axios";
 import QrcodeVue from "qrcode.vue";
@@ -324,13 +258,10 @@ import downloadPDF from "../utils/FacturaPDF.js";
 import downloadPDFP from "../utils/FacturaPersonal.js";
 import generateControlCode from "../utils/CodigoControl.js";
 
-
-
-
-
 export default {
   data() {
     return {
+      categorias2: [],
       isVisibilityDeliverys: false,
       optionsDelivery: { name: "PedidosYa" },
       optionsDeliverys: [
@@ -386,7 +317,8 @@ export default {
       empresa: "",
       celular: "",
       autorizacion: null,
-      infopersonal:[],
+      infopersonal: [],
+      contador_visitas: 0,
     };
   },
   components: {
@@ -411,24 +343,29 @@ export default {
   },
   methods: {
     authenticacion() {
-      
-      if (localStorage.getItem("User") == null || localStorage.getItem("User")=='undefined' ) {
+      if (
+        localStorage.getItem("User") == null ||
+        localStorage.getItem("User") == "undefined"
+      ) {
         this.$router.push("/login");
-      }else{
-        this.infopersonal= JSON.parse( localStorage.getItem("User")  );
+      } else {
+        this.infopersonal = JSON.parse(localStorage.getItem("User"));
       }
 
-      if (localStorage.getItem("turnoId") == null || localStorage.getItem("turnoId") == 'undefined') {
+      if (
+        localStorage.getItem("turnoId") == null ||
+        localStorage.getItem("turnoId") == "undefined"
+      ) {
         //verified_turn
         this.$router.push("/turno");
       } else {
         let result = axios
           .get(
-            this.url+"verified_turn?id_turno=" +
+            this.url +
+              "verified_turn?id_turno=" +
               JSON.parse(localStorage.getItem("turnoId"))
           )
           .then((res) => {
-            console.log(res);
             if (res.data.success == false) {
               this.$router.push("/turno");
             } else {
@@ -441,7 +378,6 @@ export default {
             console.log(err);
           });
       }
-
     },
     updateTotal() {
       this.total = 0;
@@ -458,19 +394,37 @@ export default {
       this.carrito[id].subtotal = subtotal_parse_float.toFixed(2);
       this.updateTotal();
     },
-    onSortChange(event) {
-      let id = event.value.id;
-      this.getPlates(id);
+    onSortChange(categoria_id) {
+     /*  let categoria = null;
+      for (let i = 0; i < this.categorias2.length; i++) {
+        let element = this.categorias2[i];
+        if (element.label == event.target.innerHTML) {
+          categoria = element;
+          break;
+        }
+        console.log(element);
+      }
+      console.log(categoria); */
+      this.getPlates(categoria_id);
     },
     getCategorias() {
       let result = axios
         .get(
-          this.url+"getCategories?" +
+          this.url +
+            "getCategories?" +
             "sucursal_id=" +
             JSON.parse(localStorage.getItem("User")).sucursal
         )
         .then((res) => {
           this.sortOptions = res.data.categorias;
+
+          for (let i = 0; i < res.data.categorias.length; i++) {
+            let element = res.data.categorias[i];
+            this.categorias2.push({
+              id: element.id,
+              label: element.nombre,
+            });
+          }
         })
         .catch((err) => {
           console.log(err);
@@ -479,7 +433,8 @@ export default {
     getPlates(id) {
       let result = axios
         .get(
-          this.url+"getPlates?" +
+          this.url +
+            "getPlates?" +
             "categoria_plato_id=" +
             id +
             "&sucursal_id=" +
@@ -525,12 +480,8 @@ export default {
     },
     registerSale() {
       let fecha = new Date();
-      let fecha_actual =
-        fecha.getDate() +
-        "-" +
-        (fecha.getMonth() + 1).toString() +
-        "-" +
-        fecha.getFullYear();
+      let fecha_actual = this.parseFecha(fecha);
+
       let turno_id = localStorage.getItem("turnoId");
       let datos_de_venta;
       if (
@@ -543,10 +494,7 @@ export default {
           nro_autorizacion: this.autorizacion.nro_autorizacion,
           nro_factura: this.autorizacion.nro_factura + 1,
           nit_ci: "0",
-          fecha_transaccion:
-            fecha.getDate().toString() +
-            (fecha.getMonth() + 1).toString() +
-            fecha.getFullYear().toString(),
+          fecha_transaccion: this.parseFechaC_Control(fecha),
           total_transaccion: this.total.toString(),
           llave_dosificacion: this.autorizacion.llave,
         };
@@ -601,8 +549,7 @@ export default {
           nro_autorizacion: this.autorizacion.nro_autorizacion,
           nro_factura: this.autorizacion.nro_factura + 1,
           nit_ci: this.nit_ci.toString(),
-          fecha_transaccion:
-            fecha.getDate() + fecha.getMonth() + fecha.getFullYear(),
+          fecha_transaccion: this.parseFechaC_Control(fecha),
           total_transaccion: this.total.toString(),
           llave_dosificacion: this.autorizacion.llave,
         };
@@ -656,43 +603,97 @@ export default {
 
       console.log(datos_de_venta);
 
-      axios
-        .post(
-          this.url+"sale_register",
-          datos_de_venta
-        )
-        .then((result) => {
-          console.log(result.data);
-          let visitas = result.data.cantidad_visitas;
+      axios.post(this.url + "sale_register", datos_de_venta).then((result) => {
+        console.log(result.data);
+        let visitas = result.data.cantidad_visitas;
 
-          if (result.data.status) {
-            this.get_transaction();
-            this.$swal.fire({
-              position: "top-end",
-              icon: "success",
-              title: "Venta registrada correctamente . . . ",
-              showConfirmButton: false,
-              timer: 1500,
-            });
+        if (result.data.status) {
+          this.get_transaction();
+          this.$swal.fire({
+            position: "top-end",
+            icon: "success",
+            title: "Venta registrada correctamente . . . ",
+            showConfirmButton: false,
+            timer: 1500,
+          });
 
-            if (this.optionsPayment.name == "Comida Personal") {
-              this.sale_personal(datos_de_venta, 0);
-            } else {
-              downloadPDF(datos_de_venta, visitas);
-            }
-
-            let ord = localStorage.getItem("Orden");
-            localStorage.setItem("Orden", Number(ord) + 1);
+          if (this.optionsPayment.name == "Comida Personal") {
+            this.sale_personal(datos_de_venta, 0);
           } else {
-            this.$swal.fire({
-              position: "top-end",
-              icon: "error",
-              title: "La venta no se registro correctamente  . . . ",
-              showConfirmButton: false,
-              timer: 1500,
-            });
+            downloadPDF(datos_de_venta, this.autorizacion, visitas);
           }
-        });
+
+          let ord = localStorage.getItem("Orden");
+          localStorage.setItem("Orden", Number(ord) + 1);
+        } else {
+          this.$swal.fire({
+            position: "top-end",
+            icon: "error",
+            title: "La venta no se registro correctamente  . . . ",
+            showConfirmButton: false,
+            timer: 1500,
+          });
+        }
+      });
+    },
+    parseFecha(fecha) {
+      let fecha_actual = fecha;
+      console.log(fecha.getMonth() + 1);
+      console.log(fecha.getDate());
+      if (fecha.getMonth() + 1 < 10 && fecha.getDate() < 10) {
+        fecha_actual =
+          fecha.getFullYear() +
+          "-" +
+          "0" +
+          (fecha.getMonth() + 1).toString() +
+          "-" +
+          "0" +
+          fecha.getDate().toString();
+      } else if (fecha.getDate() < 10) {
+        fecha_actual =
+          fecha.getFullYear() +
+          "-" +
+          (fecha.getMonth() + 1).toString() +
+          "-" +
+          "0" +
+          fecha.getDate().toString();
+      } else if (fecha.getMonth() + 1 < 10) {
+        fecha_actual =
+          fecha.getFullYear() +
+          "-0" +
+          (fecha.getMonth() + 1).toString() +
+          "-" +
+          fecha.getDate().toString();
+      }
+
+      return fecha_actual;
+    },
+    parseFechaC_Control(fecha) {
+      let fecha_actual = fecha;
+      console.log(fecha.getMonth() + 1);
+      console.log(fecha.getDate());
+      if (fecha.getMonth() + 1 < 10 && fecha.getDate() < 10) {
+        fecha_actual =
+          fecha.getFullYear() +
+          "0" +
+          (fecha.getMonth() + 1).toString() +
+          "0" +
+          fecha.getDate().toString();
+      } else if (fecha.getDate() < 10) {
+        fecha_actual =
+          fecha.getFullYear() +
+          (fecha.getMonth() + 1).toString() +
+          "0" +
+          fecha.getDate().toString();
+      } else if (fecha.getMonth() + 1 < 10) {
+        fecha_actual =
+          fecha.getFullYear() +
+          "0" +
+          (fecha.getMonth() + 1).toString() +
+          fecha.getDate().toString();
+      }
+
+      return fecha_actual;
     },
     sale_personal(datos, visitas) {
       console.log("prueba");
@@ -702,10 +703,7 @@ export default {
       console.log(this.nit_ci);
       if (this.nit_ci != "") {
         let result = axios
-          .get(
-            this.url+"filter_client?codigo=" +
-              this.nit_ci
-          )
+          .get(this.url + "filter_client?codigo=" + this.nit_ci)
           .then((res) => {
             let retorn = res.data;
             if (retorn.success) {
@@ -717,7 +715,7 @@ export default {
               this.celular = "";
               this.cliente = "";
               this.empresa = "";
-              this.contador_visitas = "";
+              this.contador_visitas = 0;
             }
           })
           .catch((err) => {
@@ -727,6 +725,7 @@ export default {
         this.celular = "";
         this.cliente = "";
         this.empresa = "";
+        this.contador_visitas = 0;
       }
     },
 
@@ -744,18 +743,14 @@ export default {
     getAutorizacion() {
       let sucursal_id = JSON.parse(localStorage.getItem("User")).sucursal;
       let result = axios
-        .get(
-          this.url+"getAutorization?" +
-            "sucursal_id=" +
-            sucursal_id
-        )
+        .get(this.url + "getAutorization?" + "sucursal_id=" + sucursal_id)
         .then((res) => {
           this.autorizacion = JSON.parse(res.data.autorizaciones);
           console.log(this.autorizacion);
         })
         .catch((err) => {
           console.log(err);
-        });              
+        });
     },
 
     getUserData() {},
@@ -782,10 +777,7 @@ export default {
     searchClientePhone() {
       if (this.codigo != "") {
         let result = axios
-          .get(
-            this.url+"filter_client_phone?celular=" +
-              this.codigo
-          )
+          .get(this.url + "filter_client_phone?celular=" + this.codigo)
           .then((res) => {
             console.log(res);
             let retorn = res.data;
@@ -799,7 +791,7 @@ export default {
               this.celular = "";
               this.cliente = "";
               this.empresa = "";
-              this.contador_visitas = "";
+              this.contador_visitas = 0;
             }
           })
           .catch((err) => {
@@ -808,14 +800,15 @@ export default {
       } else {
         this.celular = "";
         this.cliente = "";
-
+        this.contador_visitas = 0;
         this.empresa = "";
       }
     },
     get_transaction() {
       let result = axios
         .get(
-          this.url+"get_transaction?turno_id=" +
+          this.url +
+            "get_transaction?turno_id=" +
             JSON.parse(localStorage.getItem("turnoId"))
         )
         .then((res) => {
@@ -834,14 +827,13 @@ export default {
     },
   },
   setup() {
-    const url = inject('url');  
+    const url = inject("url");
     return {
-      url
-    }
-  }
+      url,
+    };
+  },
 };
 </script>
 <style scoped lang="scss">
 @import "../assets/demo/badges.scss";
 </style>
-
