@@ -27,6 +27,7 @@ export default function prints() {
               console.log("Error. La respuesta es: " + respuestaAlImprimir);
           }
       });
+      
       console.log(conector);
       
       /* ConectorPlugin

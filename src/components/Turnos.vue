@@ -191,7 +191,9 @@ export default {
     },
     determinateAMorPM() {
       let var_post = {
+        codigoPuntoVenta :0,
         user_id: this.infopersonal.user_id,
+        codigoFiscal : this.infopersonal.codigo_fiscal,
       };
 
       axios
@@ -211,7 +213,10 @@ export default {
     },
     open_turn(var_post) {
       axios.post(this.url + "turn_register", var_post).then((result) => {
+
+        /* OBTENGO EL CUFD */
         if (result.status == 200) {
+        console.log("Codigo Cufd Generado Exitosamente")
           this.$swal.fire({
             position: "center",
             icon: "success",
@@ -221,6 +226,8 @@ export default {
           });
           localStorage.setItem("turnoId", result.data.turno_id);
           this.$router.push("/catalogo");
+        }else{
+          console.log("Something went Wrong")
         }
       });
     },
@@ -267,7 +274,7 @@ export default {
             this.turno_habilitado[0].turno_id = result.data.turno.id;
             this.turno_habilitado[0].fecha = result.data.turno.fecha;
             this.turno_habilitado[0].turno =
-              result.data.turno.turno == 1 ? "PM" : "AM";
+              result.data.turno.turno == 1 ? "PM" : "AM"; 
           } else {
             this.turno_habilitado = [];
           }
@@ -278,7 +285,8 @@ export default {
       if (localStorage.getItem("turnoId") != "undefined") {
         dato = JSON.parse(localStorage.getItem("turnoId"));
         this.idturn = dato;
-      }
+      }    
+      //puroo huevooo
 
       let dato1 = null;
       if (localStorage.getItem("User") != "undefined") {

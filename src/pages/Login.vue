@@ -229,30 +229,23 @@ export default {
       url
     }
   }
-};
-                                                               
-</script>
-
-                                                                          
+};                                                           
+</script>                                                                      
 <style scoped>
 .pi-eye {
   transform: scale(1.6);
   margin-right: 1rem;
-}
-                                                                   
+}                                                                  
 .pi-eye-slash {
   transform: scale(1.6);
   margin-right: 1rem;
-}
-                                                                   
+}                                                                  
 #app {
   font-family: "Avenir", Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-}
-                                                                       
-</style>
-                                  
-   
+}                                                                      
+</style>                                 
+  
