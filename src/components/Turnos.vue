@@ -191,9 +191,9 @@ export default {
     },
     determinateAMorPM() {
       let var_post = {
-        codigoPuntoVenta :0,
+        codigoPuntoVenta: 0,
         user_id: this.infopersonal.user_id,
-        codigoFiscal : this.infopersonal.codigo_fiscal,
+        codigoFiscal: this.infopersonal.codigo_fiscal,
       };
 
       axios
@@ -213,10 +213,9 @@ export default {
     },
     open_turn(var_post) {
       axios.post(this.url + "turn_register", var_post).then((result) => {
-
         /* OBTENGO EL CUFD */
         if (result.status == 200) {
-        console.log("Codigo Cufd Generado Exitosamente")
+          console.log("Codigo Cufd Generado Exitosamente");
           this.$swal.fire({
             position: "center",
             icon: "success",
@@ -226,8 +225,8 @@ export default {
           });
           localStorage.setItem("turnoId", result.data.turno_id);
           this.$router.push("/catalogo");
-        }else{
-          console.log("Something went Wrong")
+        } else {
+          console.log("Something went Wrong");
         }
       });
     },
@@ -248,6 +247,17 @@ export default {
             /*  console.log(result.data); */
             if (!result.data.status) {
               //Si no Hay Turnos Abiertos
+              this.$swal.fire({
+                title: "Abriendo Turno ...",
+                allowEscapeKey: false,
+                icon: "info",
+                allowOutsideClick: false,
+                background: "#19191a",
+                showConfirmButton: false,
+                onOpen: () => {
+                  this.$swal.showLoading();
+                },
+              });
               this.open_turn(var_post);
             } else {
               //Si Hay algun turno abierto
@@ -270,11 +280,10 @@ export default {
         .then((result) => {
           //1 es PM y 0s AM
           if (result.data.turno.length != 0) {
-
             this.turno_habilitado[0].turno_id = result.data.turno.id;
             this.turno_habilitado[0].fecha = result.data.turno.fecha;
             this.turno_habilitado[0].turno =
-              result.data.turno.turno == 1 ? "PM" : "AM"; 
+              result.data.turno.turno == 1 ? "PM" : "AM";
           } else {
             this.turno_habilitado = [];
           }
@@ -285,7 +294,7 @@ export default {
       if (localStorage.getItem("turnoId") != "undefined") {
         dato = JSON.parse(localStorage.getItem("turnoId"));
         this.idturn = dato;
-      }    
+      }
       //puroo huevooo
 
       let dato1 = null;

@@ -1,3 +1,1 @@
-export default class SiatService{
-
-}
+export default class SiatService {}

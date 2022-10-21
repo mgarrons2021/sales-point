@@ -102,61 +102,10 @@
         <Column
           field="total_venta"
           header="Total Venta"
-          :style="{ width: '150px' }" >
+          :style="{ width: '150px' }"
+        >
           <template #body="slotProps">
             <td>{{ parseFloat(slotProps.data.total_venta).toFixed(2) }} Bs</td>
-          </template>
-        </Column>
-        <Column
-          field="estado"
-          header="Estado"
-          :style="{ width: '150px' }"
-          frozen >
-
-          <template #body="slotProps">
-            <td
-              style="text-align: right"
-              class="text-bold"
-              v-if="rol == 1 || rol == 5" >            
-              <Button
-                v-if="slotProps.data.estado == 0"
-                label="ANULADO"
-                icon="pi pi-info-circle"
-                class="mr-2 mb-2 p-button-danger"
-                v-on:click="
-                  cambiarEstado(
-                    slotProps.data.id,
-                    'ACTIVADO',
-                    1,
-                    slotProps.data.turno
-                  )
-                "
-              />
-              <Button
-                v-else
-                label="ACTIVO"
-                icon="pi pi-check-circle"
-                class="mr-2 mb-2 p-button-info"
-                v-on:click="
-                  cambiarEstado(
-                    slotProps.data.id,
-                    'ANULADO',
-                    0,
-                    slotProps.data.turno
-                  )
-                "
-              />
-            </td>
-            <td v-else style="text-align: right">
-              <span
-                :class="'customer-badge status-qualified'"
-                v-if="slotProps.data.estado == 1" >
-                Activo
-              </span>
-              <span :class="'customer-badge status-unqualified'" v-else>
-                Anulado
-              </span>
-            </td>
           </template>
         </Column>
         <Column field="detalle" header="Detalle" :style="{ width: '50px' }">
@@ -236,27 +185,21 @@ export default {
       rol: 0,
     };
   },
-  created() {
-    this.getAutorizacion();
-  },
   mounted() {
+    let fecha_actual = new Date();
     this.authenticacion();
-    this.getAutorizacion();
     this.getSales(
-      new Date(Date.now()).getFullYear() +
-        "-" +
-        (new Date(Date.now()).getMonth() + 1) +
-        "-" +
-        new Date(Date.now()).getUTCDate(),
-      new Date(Date.now()).getFullYear() +
-        "-" +
-        (new Date(Date.now()).getMonth() + 1) +
-        "-" +
-        new Date(Date.now()).getUTCDate(),
+      this.formatDate(fecha_actual),
+      this.formatDate(fecha_actual),
       JSON.parse(localStorage.getItem("User")).sucursal
     );
   },
   methods: {
+    formatDate(date) {
+      let formatted_date =
+        date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
+      return formatted_date;
+    },
     authenticacion() {
       if (localStorage.getItem("User") == null) {
         this.$router.push("/login");
@@ -267,13 +210,7 @@ export default {
     getSales(inicio, fin, sucursal) {
       axios
         .get(
-          this.url +
-            "sales_lists?fecha_inicio='" +
-            inicio +
-            "'&fecha_fin='" +
-            fin +
-            "'&sucursal=" +
-            sucursal
+          `${this.url}sales_lists?fecha_inicio=${inicio}&fecha_fin=${fin}&sucursal=${sucursal}`
         )
         .then((result) => {
           if (result.data.success) {
@@ -296,67 +233,7 @@ export default {
           console.log(e);
         });
     },
-    cambiarEstado(id, estado, cod_estado, turno) {
-      this.$swal
-        .fire({
-          title: "Cambiar estado ?",
-          text: "Cambiara el estado a  " + estado + " ",
-          icon: "info",
-          showCancelButton: true,
-          confirmButtonColor: "#3085d6",
-          cancelButtonColor: "#d33",
-          confirmButtonText: "Si cambiar",
-        })
-        .then((result) => {
-          if (result.isConfirmed) {
-            axios
-              .get(
-                this.url +
-                  "change_status_sale?id_venta=" +
-                  id +
-                  "&estado=" +
-                  cod_estado +
-                  "&turno=" +
-                  turno
-              )
-              .then((result) => {
-                if (result.data.success) {
-                  this.$swal.fire({
-                    position: "top-end",
-                    icon: "success",
-                    title: "El estado se ha cambiado correctamente",
-                    showConfirmButton: false,
-                    timer: 1000,
-                  });
-                  this.getSales(
-                    new Date(Date.now()).getFullYear() +
-                      "-" +
-                      (new Date(Date.now()).getMonth() + 1) +
-                      "-" +
-                      new Date(Date.now()).getUTCDate(),
-                    new Date(Date.now()).getFullYear() +
-                      "-" +
-                      (new Date(Date.now()).getMonth() + 1) +
-                      "-" +
-                      new Date(Date.now()).getUTCDate(),
-                    JSON.parse(localStorage.getItem("User")).sucursal
-                  );
-                } else {
-                  this.$swal.fire({
-                    position: "top-end",
-                    icon: "warning",
-                    title: "El estado no se ha cambiado correctamente",
-                    showConfirmButton: false,
-                    timer: 1000,
-                  });
-                }
-              })
-              .catch((e) => {
-                console.log(e);
-              });
-          }
-        });
-    },
+
     showDetails(id) {
       axios
         .get(this.url + "sales_lists_detail?venta_id=" + id)
@@ -374,37 +251,29 @@ export default {
     filterDates() {
       let d = new Date(this.desde);
       let d1 = new Date(this.hasta);
-      let data1 =
-        d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getUTCDate();
-      let data2 =
-        d1.getFullYear() + "-" + (d1.getMonth() + 1) + "-" + d1.getUTCDate();
       this.getSales(
-        data1,
-        data2,
+        this.formatDate(d),
+        this.formatDate(d1),
         JSON.parse(localStorage.getItem("User")).sucursal
       );
     },
-
-    getAutorizacion() {
-      let sucursal_id = JSON.parse(localStorage.getItem("User")).sucursal;
-      let result = axios
-        .get(this.url + "getAutorization?" + "sucursal_id=" + sucursal_id)
-        .then((res) => {
-          this.autorizacion = JSON.parse(res.data.autorizaciones);
-          console.log(this.autorizacion);
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    },
-
     print_pdf(id_venta, tipo_pago) {
       if (tipo_pago == "Comida Personal") {
         axios
           .get(this.url + "sales_for_id_personal?id=" + id_venta)
           .then((result) => {
             if (result.data.success) {
-              this.QRValue = result.data.ventas.qr;
+              let cuf = result.data.ventas.cuf;
+              let nro_factura = result.data.ventas.numero_factura;
+              this.QRValue =
+                "https://pilotosiat.impuestos.gob.bo/consulta/QR?nit=166172023" +
+                "&cuf=" +
+                cuf +
+                "&numero=" +
+                nro_factura +
+                "&t=" +
+                1;
+              console.log("Este es el QR linea 296: ", this.QRValue);
               console.log(result.data);
               let ventas = result.data.venta_detalle;
               let detalles = [];
@@ -413,15 +282,19 @@ export default {
                 detalles.push({
                   cantidad: ventas[i].cantidad,
                   plato: ventas[i].nombre,
-                  costo: parseFloat( ventas[i].precio).toFixed(2),
-                  subtotal:  parseFloat( ventas[i].subtotal).toFixed(2),
+                  costo: parseFloat(ventas[i].precio).toFixed(2),
+                  descuento: parseFloat(ventas[i].descuento).toFixed(2),
+                  subtotal: parseFloat(ventas[i].subtotal).toFixed(2),
                 });
               }
 
               let datos_de_venta = {
+                total_descuento_adicional: 0,
                 cliente: result.data.ventas.nombre,
                 nit_ci: result.data.ventas.ci_nit,
-                total_venta: parseFloat(result.data.ventas.total_venta).toFixed(2),
+                total_venta: parseFloat(result.data.ventas.total_venta).toFixed(
+                  2
+                ),
                 tipo_pago: result.data.ventas.tipo_pago,
                 detalle_venta: detalles,
                 fecha:
@@ -430,7 +303,10 @@ export default {
                   result.data.ventas.hora_venta,
                 orden: 0,
                 sucursal_nombre: result.data.ventas.sucursal,
+                direccion: result.data.ventas.sucursal_direccion,
+                codigo_fiscal: result.data.ventas.sucursal_codigo_fiscal,
                 sucursal: result.data.ventas.sucursal,
+                hora_actual: result.data.ventas.hora_venta,
               };
               //console.log(datos_de_venta)
               downloadPDFP(datos_de_venta, 0);
@@ -447,7 +323,18 @@ export default {
           .then((result) => {
             if (result.data.success) {
               console.log("result de api: ", result.data);
-              this.QRValue = result.data.ventas.qr;
+              let cuf = result.data.ventas.cuf;
+              let nro_factura = result.data.ventas.numero_factura;
+              let idcliente = result.data.ventas.idcliente;
+              let leyenda = result.data.leyenda.descripcion_leyenda;
+              this.QRValue =
+                "https://pilotosiat.impuestos.gob.bo/consulta/QR?nit=166172023" +
+                "&cuf=" +
+                cuf +
+                "&numero=" +
+                nro_factura +
+                "&t=" +
+                1;
               let ventas = result.data.venta_detalle;
               let detalles = [];
 
@@ -455,13 +342,18 @@ export default {
                 detalles.push({
                   cantidad: ventas[i].cantidad,
                   plato: ventas[i].nombre,
-                  costo:  parseFloat(ventas[i].precio).toFixed(2),
+                  costo: parseFloat(ventas[i].precio).toFixed(2),
+                  descuento: parseFloat(ventas[i].descuento).toFixed(2),
                   subtotal: parseFloat(ventas[i].subtotal).toFixed(2),
                 });
               }
 
               let datos_de_venta = {
+                hora_actual: result.data.ventas.hora_venta,
+                total_venta: result.data.ventas.total_venta,
+                total_descuento: result.data.ventas.total_descuento,
                 cliente: result.data.ventas.nombre,
+                total_descuento_adicional: 0,
                 nit_ci: result.data.ventas.ci_nit,
                 nro_factura: result.data.ventas.numero_factura,
                 nro_autorizacion: result.data.ventas.nro_autorizacion,
@@ -469,7 +361,6 @@ export default {
                   result.data.ventas.telefono == null
                     ? 0
                     : result.data.ventas.telefono,
-                total_venta: parseFloat(result.data.ventas.total_venta).toFixed(2),
                 tipo_pago: result.data.ventas.tipo_pago,
                 detalle_venta: detalles,
                 codigo_control: result.data.ventas.codigo_control,
@@ -481,7 +372,14 @@ export default {
               console.log(autorizacion);
               setTimeout(function () {
                 console.log(autorizacion);
-                downloadPDF(datos_de_venta, autorizacion, 0);
+                downloadPDF(
+                  datos_de_venta,
+                  autorizacion,
+                  0,
+                  cuf,
+                  idcliente,
+                  leyenda
+                );
               }, 1);
             }
           })

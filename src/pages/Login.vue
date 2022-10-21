@@ -9,7 +9,6 @@
         justify-content-center
         min-h-screen min-w-screen
         overflow-hidden
-      
       "
     >
       <div
@@ -46,10 +45,7 @@
                 height="100"
                 class="mb-3"
               />
-              <div class="text-900 text-3xl font-medium mb-3">
-                MAGNOREST
-              </div>
-          
+              <div class="text-900 text-3xl font-medium mb-3">MAGNORESTv2</div>
             </div>
 
             <div class="w-full md:w-10 mx-auto">
@@ -58,21 +54,32 @@
                 v-model="email"
                 type="hidden"
                 class="w-full mb-3"
-                placeholder="Email"                 
-                style="padding: 1rem"/>
+                placeholder="Email"
+                style="padding: 1rem"
+              />
 
               <label
                 for="codigo"
                 class="block text-900 font-medium text-xl mb-2"
-                >Codigo Usuario*</label>
+                >Codigo Usuario*</label
+              >
               <input
                 v-model="codigo"
                 class="form-input w-full mb-3"
                 type="number"
                 id="codigo"
                 style="padding: 1rem"
-                placeholder="Ingrese Codigo"/>
-                <span class="m-5 font-medium text-xl font-danger " :style="textoerror ?'display:block;color:red;':'display:none;color:red;'" >Datos invalidos</span>
+                placeholder="Ingrese Codigo"
+              />
+              <span
+                class="m-5 font-medium text-xl font-danger"
+                :style="
+                  textoerror
+                    ? 'display:block;color:red;'
+                    : 'display:none;color:red;'
+                "
+                >Datos invalidos</span
+              >
               <Button
                 class="form-submit w-full p-3 text-xl"
                 label="Ingresa"
@@ -88,17 +95,16 @@
 </template>
 
 <script>
-
-import  { inject }  from "vue";
+import { inject } from "vue";
 import axios from "axios";
-import  prints from "../utils/printerFuntions.js";
+import prints from "../utils/printerFuntions.js";
 
 export default {
   data: () => ({
     codigo: "",
     error: false,
-    textoerror:false,
-    objprint:'',
+    textoerror: false,
+    objprint: "",
     notificationSystem: {
       options: {
         show: {
@@ -191,24 +197,19 @@ export default {
       let codigo_auth = {
         codigo: this.codigo,
       };
-      
-      prints();
-      
-      axios
-      .post(
-        this.url+"login_sales",
-        codigo_auth)
-      .then((result) => {
-        console.log(result)
-        if (result.data["error"] ==null) {
-          this.textoerror=false;
-          localStorage.setItem('User', JSON.stringify(result.data)  );
-          this.$router.push("/turno");
-        }else {
-          this.textoerror=true;
-        }
-      });                  
 
+      prints();
+
+      axios.post(this.url + "login_sales", codigo_auth).then((result) => {
+        console.log(result);
+        if (result.data["error"] == null) {
+          this.textoerror = false;
+          localStorage.setItem("User", JSON.stringify(result.data));
+          this.$router.push("/turno");
+        } else {
+          this.textoerror = true;
+        }
+      });
     },
 
     computed: {
@@ -219,33 +220,32 @@ export default {
     },
     mounted() {
       //   this.$toast.show("Welcome!", "Hey", this.notificationSystem.options.show);
-     // this.objprint=new ConectorPlugin();
+      // this.objprint=new ConectorPlugin();
     },
     components: {},
   },
   setup() {
-    const url = inject('url');  
+    const url = inject("url");
     return {
-      url
-    }
-  }
-};                                                           
+      url,
+    };
+  },
+};
 </script>                                                                      
 <style scoped>
 .pi-eye {
   transform: scale(1.6);
   margin-right: 1rem;
-}                                                                  
+}
 .pi-eye-slash {
   transform: scale(1.6);
   margin-right: 1rem;
-}                                                                  
+}
 #app {
   font-family: "Avenir", Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-}                                                                      
+}
 </style>                                 
-  

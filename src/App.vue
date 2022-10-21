@@ -44,7 +44,7 @@ export default {
               icon: "pi pi-sign-in",
               to: "/turno",
             },
-           /*  {
+            /*  {
               label: "Catalogo de Platos",
               icon: "pi pi-fw pi-home",
               to: "/catalogo",

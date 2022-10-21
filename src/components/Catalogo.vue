@@ -3,12 +3,30 @@
     <div class="col-12">
       <div class="card p-fluid">
         <div class="formgrid grid" :style="'display: flex;width:100%;'">
-          <div class="field col-10">
+          <div class="field col-9">
             <h5 :style="'text-align:left;clear: both; '">
               Formulario de Registro - Nro de Transaccion:
               {{ this.nro_transaccion + 1 }}
             </h5>
           </div>
+
+          <div class="field col-3">
+            <div class="modalidadoffline">
+              <div class="panel-heading">
+                <h5 class="panel-title">Modalidad Offline</h5>
+              </div>
+              <div class="panel-body">
+                <label class="switch">
+                  <input type="checkbox" @click="toggleCheckbox" />
+                  <div class="slider round"></div>
+                </label>
+                <p>{{ checkbox }}</p>
+              </div>
+            </div>
+          </div>
+
+          <br />
+
           <div class="field col-2" v-if="infopersonal.sucursal == 18">
             <h5 :style="'text-align:right'">
               Nro Visitas: {{ contador_visitas }}
@@ -17,7 +35,7 @@
         </div>
 
         <div class="formgrid grid">
-          <div class="field col-3">
+          <div class="field col-2">
             <label for="lugar">Seleccione la Contingencia</label>
             <Dropdown
               v-model="evento"
@@ -56,6 +74,17 @@
               :options="optionsPayments"
               optionLabel="name"
               :placeholder="optionsPayment"
+            />
+          </div>
+
+          <div class="field col-2">
+            <label for="lugar">Tipo de Documento</label>
+            <Dropdown
+              v-model="documentoIdentidad"
+              :options="documentosIdentidades"
+              optionLabel="descripcion"
+              :placeholder="'Seleccione tipo documento'"
+              @change="obtenerIdentityDocument()"
             />
           </div>
 
@@ -118,7 +147,7 @@
         </div>
       </div>
     </div>
-    <div class="col-6">
+    <div class="col-7">
       <div class="card">
         <h5>Platos Ofertados</h5>
         <TabMenu :model="categorias2">
@@ -185,7 +214,7 @@
         </DataView>
       </div>
     </div>
-    <div class="col-6">
+    <div class="col-5">
       <div class="card">
         <h5>Detalle de Venta</h5>
         <DataTable
@@ -195,6 +224,7 @@
           :loading="loading2"
           scrollDirection="both"
           class="mt-2"
+          :responsiveLayout="true"
         >
           <Column :style="{ width: '50px' }" header=" ">
             <template #body="slotProps">
@@ -233,6 +263,24 @@
           <Column field="costo" header="Costo" :style="{ width: '150px' }">
           </Column>
           <Column
+            field="descuento"
+            header="Descuento"
+            :style="{ width: '150px' }"
+          >
+            <template #body="slotProps">
+              <input
+                type="number"
+                :value="slotProps.data.descuento"
+                style="width: 100%"
+                v-on:keyup="
+                  calculateSubtotalDescuento(
+                    this.carrito.indexOf(slotProps.data)
+                  )
+                "
+              />
+            </template>
+          </Column>
+          <Column
             field="subtotal"
             header="Sub Total"
             :style="{ width: '150px' }"
@@ -254,6 +302,35 @@
               <p class="text-right">{{ total }} bs.</p>
             </div>
           </div>
+          <div class="grid">
+            <div class="col-10">
+              <p>Total Descuento x Producto:</p>
+            </div>
+            <div class="col-2">
+              <p class="text-right">{{ this.totalDescuento }} bs.</p>
+            </div>
+          </div>
+
+          <div class="grid">
+            <div class="col-10">
+              <p>Total Descuento:</p>
+            </div>
+            <div class="col-2">
+              <input
+                type="number"
+                style="width: 100%"
+                :value="this.totalDescuentoAdicional"
+              />
+            </div>
+          </div>
+          <div class="grid">
+            <div class="col-10">
+              <p>Total Neto:</p>
+            </div>
+            <div class="col-2">
+              <p class="text-right">{{ total - totalDescuento }} bs.</p>
+            </div>
+          </div>
           <div class="card-footer">
             <div class="field col-3">
               <Button
@@ -270,6 +347,7 @@
   <div id="content_qr" style="opacity: 0">
     <qrcode-vue :value="QRValue" size="200" level="L" />
   </div>
+  <div id="qr_code"></div>
 </template>
 
 <script>
@@ -280,7 +358,7 @@ import QrcodeVue from "qrcode.vue";
 import downloadPDF from "../utils/FacturaPDF.js";
 import downloadPDFP from "../utils/FacturaPersonal.js";
 import generateControlCode from "../utils/CodigoControl.js";
-
+import QRCode from "qrcode";
 export default {
   data() {
     return {
@@ -335,16 +413,21 @@ export default {
       subtotal: 0,
       subtotales: [],
       total: 0,
+      totalDescuento: 0,
+      totalDescuentoAdicional: 0,
+      totalNeto: 0,
       nit_ci: "",
       cliente: "",
       empresa: "",
       celular: "",
       correo: "",
-      autorizacion: null,
+      cufd: null,
       infopersonal: [],
       contador_visitas: 0,
       eventos: [],
-      evento: 1,
+      documentosIdentidades: [],
+      documentoIdentidad: 1,
+      evento: null,
     };
   },
   components: {
@@ -361,11 +444,9 @@ export default {
       .getProducts()
       .then((data) => (this.dataviewValue = data));
     this.getCategorias();
-    this.getAutorizacion();
+    this.getCufd();
     this.getEventsSignificative();
-  },
-  updated() {
-    console.log(this.subtotal);
+    this.getIdentityDocuments();
   },
   methods: {
     authenticacion() {
@@ -382,7 +463,6 @@ export default {
         localStorage.getItem("turnoId") == null ||
         localStorage.getItem("turnoId") == "undefined"
       ) {
-        //verified_turn
         this.$router.push("/turno");
       } else {
         let result = axios
@@ -411,8 +491,12 @@ export default {
         this.total += parseFloat(this.carrito[i].subtotal);
       }
     },
-    obtenerEvento() {
-      console.log(this.evento.descripcion);
+
+    updateTotalDescuento() {
+      this.totalDescuento = 0;
+      for (let i = 0; i < this.carrito.length; i++) {
+        this.totalDescuento += parseFloat(this.carrito[i].descuento);
+      }
     },
     getEventsSignificative() {
       ///getSignifficantEvents
@@ -421,7 +505,18 @@ export default {
         .then((res) => {
           //console.log(res.data.events);
           this.eventos = res.data.events;
-          console.log(this.eventos);
+          /*  console.log(this.eventos); */
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    },
+    getIdentityDocuments() {
+      let result = axios
+        .get(this.url + "getIdentityDocuments")
+        .then((res) => {
+          console.log(res.data.documentosIdentidades);
+          this.documentosIdentidades = res.data.documentosIdentidades;
         })
         .catch((err) => {
           console.log(err);
@@ -436,17 +531,13 @@ export default {
       this.carrito[id].subtotal = subtotal_parse_float.toFixed(2);
       this.updateTotal();
     },
+    calculateSubtotalDescuento: function (id) {
+      this.carrito[id].descuento = event.target.value;
+      /*   this.carrito[id].descuento = subtotal_parse_float.toFixed(2); */
+      this.updateTotalDescuento();
+    },
+
     onSortChange(categoria_id) {
-      /*  let categoria = null;
-      for (let i = 0; i < this.categorias2.length; i++) {
-        let element = this.categorias2[i];
-        if (element.label == event.target.innerHTML) {
-          categoria = element;
-          break;
-        }
-        console.log(element);
-      }
-      console.log(categoria); */
       this.getPlates(categoria_id);
     },
     getCategorias() {
@@ -483,10 +574,8 @@ export default {
             JSON.parse(localStorage.getItem("User")).sucursal
         )
         .then((res) => {
-          console.log(res);
           if (res.data.plate.length > 0) {
             this.plates = res.data.plate;
-            console.log(this.plates);
           } else {
             this.plates = null;
           }
@@ -500,6 +589,7 @@ export default {
         plato_id: data.id,
         plato: data.Plato,
         cantidad: 0,
+        descuento: 0,
         costo: data.Precio,
         subtotal: 0,
       });
@@ -509,6 +599,7 @@ export default {
         plato_id: data.id,
         plato: data.Plato,
         cantidad: 0,
+        descuento: 0,
         costo: data.PrecioDelivery,
         subtotal: 0,
       });
@@ -526,7 +617,8 @@ export default {
 
       let turno_id = localStorage.getItem("turnoId");
       let datos_de_venta;
-      let eventoid = this.evento.id;
+      let eventoid = this.evento === null ? null : this.evento.id;
+      let identity_document_id = this.documentoIdentidad.id;
 
       this.$swal.fire({
         title: "Registrando la venta ...",
@@ -547,54 +639,18 @@ export default {
         this.celular == "" &&
         this.correo == ""
       ) {
-        let codigoControl = {
-          nro_autorizacion: this.autorizacion.nro_autorizacion,
-          nro_factura: this.autorizacion.nro_factura + 1,
-          nit_ci: "0",
-          fecha_transaccion: this.parseFechaC_Control(fecha),
-          total_transaccion: this.total.toString(),
-          llave_dosificacion: this.autorizacion.llave,
-        };
-
-        //this.QRValue = "https://siat.impuestos.gob.bo/consulta/QR?nit=166172023&cuf=B5EB51F7ABA0B5B7E2E50E797E1576DCDD5A304834914E57CA0D6D74&numero=20&t=2";
-
-        /*
-        this.QRValue =
-          this.datos_empresa.nit.toString() +
-          "|" +
-          codigoControl.nro_factura +
-          "|" +
-          codigoControl.nro_autorizacion +
-          "|" +
-          fecha_actual.replace("/", "-") +
-          "|" +
-          codigoControl.total_transaccion +
-          "|" +
-          codigoControl.total_transaccion +
-          "|" +
-          this.generarCodigoControl(codigoControl).toString() +
-          "|" +
-          codigoControl.nit_ci +
-          "|" +
-          "0" +
-          "|" +
-          "0" +
-          "|" +
-          "0" +
-          "|";
-
-        */
-
+        console.log("Cufd: ", this.cufd);
         datos_de_venta = {
           correo: "SIN CORREO",
           cliente: "SIN NOMBRE",
-          nit_ci: 0,
-          nro_factura: this.autorizacion.nro_factura + 1,
-          nro_autorizacion: this.autorizacion.nro_autorizacion,
+          nit_ci: "0",
+          nro_factura: this.cufd.numero_factura + 1,
           empresa: "SIN EMPRESA",
           telefono: 0,
           delivery: this.optionsDelivery.delivery,
           total_venta: this.total.toFixed(2),
+          total_descuento: this.totalDescuento.toFixed(2),
+          total_descuento_adicional: this.totalDescuentoAdicional.toFixed(2),
           tipo_pago: this.optionsPayment.name,
           lugar: this.optionsPlace.name,
           turno_id: turno_id,
@@ -602,59 +658,25 @@ export default {
           sucursal_nombre: JSON.parse(localStorage.getItem("User"))
             .sucursal_nombre,
           detalle_venta: this.carrito,
-          codigo_control: this.generarCodigoControl(codigoControl).toString(),
+          /*   codigo_control: this.generarCodigoControl(codigoControl).toString(), */
           qr: this.QRValue,
           sucursal: JSON.parse(localStorage.getItem("User")).sucursal,
           orden: localStorage.getItem("Orden"),
           evento_significativo_id: eventoid,
+          documento_identidad_id: identity_document_id,
         };
       } else {
-        let codigoControl = {
-          nro_autorizacion: this.autorizacion.nro_autorizacion,
-          nro_factura: this.autorizacion.nro_factura + 1,
-          nit_ci: this.nit_ci.toString(),
-          fecha_transaccion: this.parseFechaC_Control(fecha),
-          total_transaccion: this.total.toString(),
-          llave_dosificacion: this.autorizacion.llave,
-        };
-
-        //this.QRValue ="https://siat.impuestos.gob.bo/consulta/QR?nit=166172023&cuf=B5EB51F7ABA0B5B7E2E50E797E1576DCDD5A304834914E57CA0D6D74&numero=20&t=2";
-
-        /*
-          this.datos_empresa.nit.toString() +
-          "|" +
-          codigoControl.nro_factura +
-          "|" +
-          codigoControl.nro_autorizacion +
-          "|" +
-          fecha_actual.replace("/", "-") +
-          "|" +
-          codigoControl.total_transaccion +
-          "|" +
-          codigoControl.total_transaccion +
-          "|" +
-          this.generarCodigoControl(codigoControl).toString() +
-          "|" +
-          codigoControl.nit_ci +
-          "|" +
-          "0" +
-          "|" +
-          "0" +
-          "|" +
-          "0" +
-          "|"
-          */
-
         datos_de_venta = {
           correo: this.correo,
           cliente: this.cliente,
-          nit_ci: this.nit_ci == "" ? 0 : this.nit_ci,
-          nro_factura: this.autorizacion.nro_factura + 1,
-          nro_autorizacion: this.autorizacion.nro_autorizacion,
+          nit_ci: this.nit_ci == "" ? "0" : this.nit_ci.toString(),
+          nro_factura: this.cufd.numero_factura + 1,
           empresa: this.empresa == "" ? "SIN EMPRESA" : this.empresa,
           telefono: this.celular,
           delivery: this.optionsDelivery.delivery,
           total_venta: this.total.toFixed(2),
+          total_descuento: this.totalDescuento.toFixed(2),
+          total_descuento_adicional: this.totalDescuentoAdicional.toFixed(2),
           tipo_pago: this.optionsPayment.name,
           lugar: this.optionsPlace.name,
           turno_id: turno_id,
@@ -662,88 +684,122 @@ export default {
           sucursal_nombre: JSON.parse(localStorage.getItem("User"))
             .sucursal_nombre,
           detalle_venta: this.carrito,
-          codigo_control: this.generarCodigoControl(codigoControl).toString(),
           qr: this.QRValue,
           sucursal: JSON.parse(localStorage.getItem("User")).sucursal,
           orden: localStorage.getItem("Orden"),
           evento_significativo_id: eventoid,
+          documento_identidad_id: identity_document_id,
         };
       }
-
-      console.log(datos_de_venta);
-
       axios.post(this.url + "sale_register", datos_de_venta).then((result) => {
-        console.log(result.data);
-        // console.log( siat.original.response_siat.RespuestaServicioFacturacion.codigoDescripcion );
         let visitas = result.data.cantidad_visitas;
-        this.$swal.close();
+
         if (result.data.status) {
-          console.log(result.data.response_siat.original);
-          //response_siat    .RespuestaServicioFacturacion.codigoDescripcion
-          /* let siat =
-            result.data.response_siat.original.response_siat
-              .RespuestaServicioFacturacion.codigoDescripcion == null
-              ? "RECHAZADA"
-              : result.data.response_siat.original.response_siat
-                  .RespuestaServicioFacturacion.codigoDescripcion;
-
-          console.log(siat == "RECHAZADA" ? true : false);
-          console.log(siat); */
-
-          /* if (siat.toString() == "RECHAZADA") {
-            this.$swal.fire({
-              position: "top-center",
-              icon: "error",
-              title: "Factura rechazada por el SIAT",
-              showConfirmButton: false,
-              timer: 2000,
-            });
-          } */
-
           let cuf = result.data.cuf;
           let leyenda = result.data.leyenda.descripcion_leyenda;
           let idcliente = result.data.idcliente;
-          let nro_factura;
-// https://pilotosiat.impuestos.gob.bo/consulta/QR?nit=valorNit&cuf=valorCuf&numero=valorNroFactura&t=valorTamaño
+          let nro_factura = result.data.nro_factura;
+          console.log(
+            "datos para el QR:",
+            this.datos_empresa.nit,
+            cuf,
+            nro_factura
+          );
           this.QRValue =
             "https://pilotosiat.impuestos.gob.bo/consulta/QR?nit=" +
             this.datos_empresa.nit +
             "&cuf=" +
             cuf +
             "&numero=" +
-            datos_de_venta.nro_factura +
-            "&t=1";
-          
-          console.log(this.QRValue);
+            nro_factura +
+            "&t=" +
+            1;
+          console.log("Este es el QR linea 719: ", this.QRValue);
 
           this.get_transaction();
-          
-          this.$swal.fire({
-            position: "top-end",
-            icon: "success",
-            title: "Venta registrada correctamente . . . ",
-            showConfirmButton: false,
-            timer: 3000,
-            onClose: () => {
-              console.log("hola mundo ");
-            },
-          });
+          if (result.data.response_siat != "undefined") {
+            this.$swal.close();
+            this.$swal.fire({
+              position: "center",
+              icon: "success",
+              title: "Success",
+              text: "Venta Registrada Exitosamente",
+              showConfirmButton: true,
+              timer: 1500,
+            });
+          }
+
+          if (result.data.response_siat == "undefined") {
+            setTimeout(function () {
+              downloadPDF(
+                datos_de_venta,
+                this.cufd,
+                visitas,
+                cuf,
+                idcliente,
+                leyenda
+              );
+            }, 50);
+          }
+
+          let response_siat = result.data.response_siat
+            ? result.data.response_siat.RespuestaServicioFacturacion
+            : "";
+          this.$swal.close();
+
+          if (response_siat != "") {
+            console.log(result.data.response_siat.RespuestaServicioFacturacion);
+            if (response_siat.codigoEstado == 908) {
+              this.$swal.fire({
+                position: "center",
+                icon: "success",
+                title: "Codigo Estado: " + response_siat.codigoEstado,
+                text: "Codigo Descripcion: " + response_siat.codigoDescripcion,
+                showConfirmButton: true,
+                timer: 1500,
+              });
+            } else {
+              this.$swal.fire({
+                position: "center",
+                icon: "error",
+                title: response_siat.codigoEstado,
+                text:
+                  response_siat.codigoDescripcion +
+                  ' "' +
+                  response_siat.mensajesList.descripcion +
+                  '"',
+                showConfirmButton: true,
+                timer: 5000,
+              });
+            }
+          }
 
           if (this.optionsPayment.name == "Comida Personal") {
             this.sale_personal(datos_de_venta, 0);
           } else {
-            downloadPDF(
-              datos_de_venta,
-              this.autorizacion,
-              visitas,
-              cuf,
-              idcliente,
-              leyenda
-            );
+            setTimeout(function () {
+              downloadPDF(
+                datos_de_venta,
+                this.cufd,
+                visitas,
+                cuf,
+                idcliente,
+                leyenda
+              );
+            }, 50);
           }
 
           let ord = localStorage.getItem("Orden");
           localStorage.setItem("Orden", Number(ord) + 1);
+          this.carrito = [];
+          this.totalDescuento = 0;
+          this.totalNeto = 0;
+          this.total = 0;
+          this.cliente = "";
+          this.nit_ci = "";
+          this.empresa = "";
+          this.celular = "";
+          this.correo = "";
         } else {
           this.$swal.fire({
             position: "top-end",
@@ -757,8 +813,8 @@ export default {
     },
     parseFecha(fecha) {
       let fecha_actual = fecha;
-      console.log(fecha.getMonth() + 1);
-      console.log(fecha.getDate());
+      /*      console.log(fecha.getMonth() + 1);
+      console.log(fecha.getDate()); */
       if (fecha.getMonth() + 1 < 10 && fecha.getDate() < 10) {
         fecha_actual =
           fecha.getFullYear() +
@@ -789,8 +845,8 @@ export default {
     },
     parseFechaC_Control(fecha) {
       let fecha_actual = fecha;
-      console.log(fecha.getMonth() + 1);
-      console.log(fecha.getDate());
+      /*  console.log(fecha.getMonth() + 1);
+      console.log(fecha.getDate()); */
       if (fecha.getMonth() + 1 < 10 && fecha.getDate() < 10) {
         fecha_actual =
           fecha.getFullYear() +
@@ -815,11 +871,11 @@ export default {
       return fecha_actual;
     },
     sale_personal(datos, visitas) {
-      console.log("prueba");
+      /*    console.log("prueba"); */
       downloadPDFP(datos, visitas);
     },
     searchCliente() {
-      console.log(this.nit_ci);
+      /*   console.log(this.nit_ci); */
       if (this.nit_ci != "") {
         let result = axios
           .get(this.url + "filter_client?codigo=" + this.nit_ci)
@@ -849,50 +905,21 @@ export default {
         this.contador_visitas = 0;
       }
     },
-
-    generarCodigoControl(codigo_control) {
-      return generateControlCode(
-        codigo_control.nro_autorizacion,
-        codigo_control.nro_factura,
-        codigo_control.nit_ci,
-        codigo_control.fecha_transaccion,
-        codigo_control.total_transaccion,
-        codigo_control.llave_dosificacion
-      );
-    },
-
-    getAutorizacion() {
+    getCufd() {
       let sucursal_id = JSON.parse(localStorage.getItem("User")).sucursal;
       let result = axios
-        .get(this.url + "getAutorization?" + "sucursal_id=" + sucursal_id)
+        .get(this.url + "getCufd?" + "sucursal_id=" + sucursal_id)
         .then((res) => {
-          this.autorizacion = JSON.parse(res.data.autorizaciones);
-          console.log(this.autorizacion);
+          this.cufd = JSON.parse(res.data.cufd);
         })
         .catch((err) => {
           console.log(err);
         });
     },
-
     getUserData() {},
     redondear(monto) {
-      let _monto = monto.toFixed(1);
-      let dato = _monto.toString();
-      let ultimo = _monto.toString().charAt(dato.length - 1);
-      console.log("dato: ", dato);
-      console.log("ultimo: ", ultimo);
-      if (parseInt(ultimo) > 5) {
-        _monto = Math.round(_monto);
-        console.log(_monto);
-      } else {
-        if (parseInt(ultimo) == 0) {
-          _monto = Math.round(_monto);
-          console.log(_monto);
-        } else {
-          _monto = Math.round(_monto) + ".50";
-          console.log(_monto);
-        }
-      }
+      console.log(monto);
+      let _monto = monto.toFixed(2);
       return _monto;
     },
     searchClientePhone() {
@@ -900,7 +927,7 @@ export default {
         let result = axios
           .get(this.url + "filter_client_phone?celular=" + this.codigo)
           .then((res) => {
-            console.log(res);
+            /*  console.log(res); */
             let retorn = res.data;
             if (retorn.success) {
               this.nit_ci = retorn.cliente.ci_nit;
@@ -935,12 +962,12 @@ export default {
             JSON.parse(localStorage.getItem("turnoId"))
         )
         .then((res) => {
-          console.log(res.data);
+          /* console.log(res.data); */
           this.nro_transaccion = res.data.nro_transaccion;
         });
     },
     mostrarDeliverys() {
-      console.log(this.optionsPlace.name);
+      /* console.log(this.optionsPlace.name); */
 
       if (this.optionsPlace.name == "Delivery") {
         this.isVisibilityDeliverys = true;
@@ -956,7 +983,84 @@ export default {
     };
   },
 };
+var app = {
+  el: "#app",
+  data: {
+    checkbox: false,
+  },
+  methods: {
+    toggleCheckbox() {
+      this.checkbox = !this.checkbox;
+      this.$emit("setCheckboxVal", this.checkbox);
+    },
+  },
+};
 </script>
 <style scoped lang="scss">
 @import "../assets/demo/badges.scss";
+body {
+  text-align: center;
+  background: #51c3a0;
+  padding: 50px;
+}
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 58px;
+  height: 32px;
+}
+
+.switch input {
+  display: none;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  -webkit-transition: 0.4s;
+  transition: 0.4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  -webkit-transition: 0.4s;
+  transition: 0.4s;
+}
+
+input:checked + .slider {
+  background-color: #101010;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #101010;
+}
+
+input:checked + .slider:before {
+  -webkit-transform: translateX(26px);
+  -ms-transform: translateX(26px);
+  transform: translateX(26px);
+}
+
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+.modalidadoffline {
+  display: grid;
+  grid-template-columns: auto auto;
+}
 </style>

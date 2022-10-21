@@ -1,3 +1,5 @@
+
+
 var numeroALetras = (function () {
   // Código basado en https://gist.github.com/alfchee/e563340276f89b22042a
   function Unidades(num) {
@@ -23,6 +25,7 @@ var numeroALetras = (function () {
     }
 
     return "";
+
   } //Unidades()
   function Decenas(num) {
     let decena = Math.floor(num / 10);
@@ -173,6 +176,7 @@ var numeroALetras = (function () {
             );
         })();
     }
+
     console.log("data: ",data);
     if (data.enteros == 0) return "CERO " + data.letrasMonedaPlural;
     if (data.enteros >= 1 && data.centavos==50)  {
@@ -206,4 +210,9 @@ function redondear(monto) {
   return _monto;
 }
 
+
+
+
 export default numeroALetras;
+
+
