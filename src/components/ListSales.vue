@@ -239,7 +239,9 @@ export default {
         .get(this.url + "sales_lists_detail?venta_id=" + id)
         .then((result) => {
           if (result.data.success) {
+            console.log(result.data);
             this.detail = result.data.sales_detail;
+
             this.showModal = true;
           }
         })
@@ -353,6 +355,7 @@ export default {
                 total_venta: result.data.ventas.total_venta,
                 total_descuento: result.data.ventas.total_descuento,
                 cliente: result.data.ventas.nombre,
+                complemento: result.data.ventas.complemento,
                 total_descuento_adicional: 0,
                 nit_ci: result.data.ventas.ci_nit,
                 nro_factura: result.data.ventas.numero_factura,
@@ -367,6 +370,7 @@ export default {
                 qr: this.QRValue,
                 sucursal: result.data.ventas.sucursal,
                 sucursal_nombre: result.data.ventas.sucursal_nombre,
+                evento_significativo_id: result.data.ventas.evento_significativo_id
               };
               let autorizacion = this.autorizacion;
               console.log(autorizacion);

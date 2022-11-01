@@ -9,24 +9,20 @@
               {{ this.nro_transaccion + 1 }}
             </h5>
           </div>
-
           <div class="field col-3">
             <div class="modalidadoffline">
               <div class="panel-heading">
-                <h5 class="panel-title">Modalidad Offline</h5>
+                <h5 class="panel-title">Emision Fuera de Linea</h5>
               </div>
               <div class="panel-body">
                 <label class="switch">
-                  <input type="checkbox" @click="toggleCheckbox" />
+                  <input type="checkbox" @click="toggleCheckbox()" />
                   <div class="slider round"></div>
                 </label>
-                <p>{{ checkbox }}</p>
               </div>
             </div>
           </div>
-
           <br />
-
           <div class="field col-2" v-if="infopersonal.sucursal == 18">
             <h5 :style="'text-align:right'">
               Nro Visitas: {{ contador_visitas }}
@@ -35,16 +31,6 @@
         </div>
 
         <div class="formgrid grid">
-          <div class="field col-2">
-            <label for="lugar">Seleccione la Contingencia</label>
-            <Dropdown
-              v-model="evento"
-              :options="eventos"
-              optionLabel="descripcion"
-              :placeholder="'Seleccione un evento'"
-              @change="obtenerEvento()"
-            />
-          </div>
           <div class="field col-2">
             <label for="lugar">Lugar</label>
             <Dropdown
@@ -89,13 +75,22 @@
           </div>
 
           <div class="field col-2">
-            <label for="nit_ci">Nit/Ci</label>
+            <label for="nit_ci">Nro de Documento</label>
             <InputText
               id="nit_ci"
               type="text"
-              placeholder="Nit/Ci"
+              placeholder="Nro de Documento"
               v-model="nit_ci"
               v-on:keyup="searchCliente()"
+            />
+          </div>
+          <div class="field col-2">
+            <label for="complemento">Complemento</label>
+            <InputText
+              id="complemento"
+              type="text"
+              placeholder="Complemento"
+              v-model="complemento"
             />
           </div>
           <div class="field col-2">
@@ -125,13 +120,49 @@
               v-model="celular"
             />
           </div>
-          <div class="field col-3">
+          <div class="field col-2">
             <label for="correo">Correo</label>
             <InputText
               id="correo"
               type="text"
               placeholder="Correo"
               v-model="correo"
+            />
+          </div>
+          <div
+            class="field col-2"
+            :style="checkbox == true ? 'display:block' : 'display:none'"
+          >
+            <label for="lugar">Seleccione la Contingencia</label>
+            <Dropdown
+              v-model="contingencia"
+              :options="contingencias"
+              optionLabel="descripcion"
+              :placeholder="'Seleccione una contingencia'"
+              @change="obtenerEvento()"
+            />
+          </div>
+          <div
+            class="field col-2"
+            :style="checkbox == true ? 'display:block' : 'display:none'"
+          >
+            <label for="lugar">Fecha de Emision Manual</label>
+            <Calendar
+              v-model="fecha_emision_manual"
+              :showButtonBar="true"
+              placeholder="Fecha Emision Manual"
+            />
+          </div>
+          <div
+            class="field col-2"
+            :style="checkbox == true ? 'display:block' : 'display:none'"
+          >
+            <label for="lugar">Hora de Emision Manual</label>
+            <Calendar
+              v-model="hora_emision_manual"
+              :showButtonBar="true"
+              placeholder="Hora Emision Manual"
+              :timeOnly="true"
             />
           </div>
           <div class="field col-2" v-if="infopersonal.sucursal == 18">
@@ -171,14 +202,7 @@
           <template #grid="slotProps">
             <div class="col-12 md:col-6">
               <div
-                class="
-                  card
-                  m-1
-                  border-1
-                  surface-border
-                  justify-content-center
-                  align-items-center
-                "
+                class="card m-1 border-1 surface-border justify-content-center align-items-center"
               >
                 <div class="text-center">
                   <img
@@ -353,6 +377,7 @@
 <script>
 import { inject } from "vue";
 import ProductService from "../service/ProductService";
+import moment from "moment";
 import axios from "axios";
 import QrcodeVue from "qrcode.vue";
 import downloadPDF from "../utils/FacturaPDF.js";
@@ -360,9 +385,13 @@ import downloadPDFP from "../utils/FacturaPersonal.js";
 import generateControlCode from "../utils/CodigoControl.js";
 import QRCode from "qrcode";
 export default {
+  name: "catalogo",
   data() {
     return {
+      hora_emision_manual: null,
+      fecha_emision_manual: null,
       categorias2: [],
+      checkbox: false,
       isVisibilityDeliverys: false,
       optionsDelivery: { name: "PedidosYa" },
       optionsDeliverys: [
@@ -417,6 +446,7 @@ export default {
       totalDescuentoAdicional: 0,
       totalNeto: 0,
       nit_ci: "",
+      complemento: "",
       cliente: "",
       empresa: "",
       celular: "",
@@ -424,14 +454,20 @@ export default {
       cufd: null,
       infopersonal: [],
       contador_visitas: 0,
-      eventos: [],
+      contingencias: [],
       documentosIdentidades: [],
       documentoIdentidad: 1,
-      evento: null,
+      contingencia: null,
     };
   },
   components: {
     QrcodeVue,
+  },
+  setup() {
+    const url = inject("url");
+    return {
+      url,
+    };
   },
   productService: null,
   created() {
@@ -491,7 +527,6 @@ export default {
         this.total += parseFloat(this.carrito[i].subtotal);
       }
     },
-
     updateTotalDescuento() {
       this.totalDescuento = 0;
       for (let i = 0; i < this.carrito.length; i++) {
@@ -504,8 +539,8 @@ export default {
         .get(this.url + "getSignifficantEvents")
         .then((res) => {
           //console.log(res.data.events);
-          this.eventos = res.data.events;
-          /*  console.log(this.eventos); */
+          this.contingencias = res.data.events;
+          /*  console.log(this.contingencias); */
         })
         .catch((err) => {
           console.log(err);
@@ -614,10 +649,29 @@ export default {
     registerSale() {
       let fecha = new Date();
       let fecha_actual = this.parseFecha(fecha);
+      let fecha_prueba = moment().format("dddd");
+      console.log("patrick" + fecha_prueba);
+
+      let fecha_emision_manual_2;
+      let hora_emision_manual_2;
+      if (
+        this.fecha_emision_manual != null &&
+        this.hora_emision_manual != null
+      ) {
+        fecha_emision_manual_2 = moment(this.fecha_emision_manual).format(
+          "Y-MM-DD"
+        );
+        hora_emision_manual_2 = moment(this.hora_emision_manual).format(
+          "HH:mm:ss"
+        );
+      } else {
+        fecha_emision_manual_2 = this.fecha_emision_manual;
+        hora_emision_manual_2 = this.hora_emision_manual;
+      }
 
       let turno_id = localStorage.getItem("turnoId");
       let datos_de_venta;
-      let eventoid = this.evento === null ? null : this.evento.id;
+      let eventoid = this.contingencia === null ? null : this.contingencia.id;
       let identity_document_id = this.documentoIdentidad.id;
 
       this.$swal.fire({
@@ -644,6 +698,7 @@ export default {
           correo: "SIN CORREO",
           cliente: "SIN NOMBRE",
           nit_ci: "0",
+          complemento: this.complemento,
           nro_factura: this.cufd.numero_factura + 1,
           empresa: "SIN EMPRESA",
           telefono: 0,
@@ -663,6 +718,8 @@ export default {
           sucursal: JSON.parse(localStorage.getItem("User")).sucursal,
           orden: localStorage.getItem("Orden"),
           evento_significativo_id: eventoid,
+          fecha_emision_manual: fecha_emision_manual_2,
+          hora_emision_manual: hora_emision_manual_2,
           documento_identidad_id: identity_document_id,
         };
       } else {
@@ -670,6 +727,7 @@ export default {
           correo: this.correo,
           cliente: this.cliente,
           nit_ci: this.nit_ci == "" ? "0" : this.nit_ci.toString(),
+          complemento: this.complemento,
           nro_factura: this.cufd.numero_factura + 1,
           empresa: this.empresa == "" ? "SIN EMPRESA" : this.empresa,
           telefono: this.celular,
@@ -688,6 +746,8 @@ export default {
           sucursal: JSON.parse(localStorage.getItem("User")).sucursal,
           orden: localStorage.getItem("Orden"),
           evento_significativo_id: eventoid,
+          fecha_emision_manual: fecha_emision_manual_2,
+          hora_emision_manual: hora_emision_manual_2,
           documento_identidad_id: identity_document_id,
         };
       }
@@ -883,6 +943,7 @@ export default {
             let retorn = res.data;
             if (retorn.success) {
               this.celular = retorn.cliente.telefono;
+              this.complemento = retorn.cliente.complemento;
               this.cliente = retorn.cliente.nombre;
               this.empresa = retorn.cliente.empresa;
               this.correo = retorn.cliente.correo;
@@ -931,6 +992,7 @@ export default {
             let retorn = res.data;
             if (retorn.success) {
               this.nit_ci = retorn.cliente.ci_nit;
+              this.complemento = retorn.cliente.complemento;
               this.celular = retorn.cliente.telefono;
               this.cliente = retorn.cliente.nombre;
               this.empresa = retorn.cliente.empresa;
@@ -975,23 +1037,8 @@ export default {
         this.isVisibilityDeliverys = false;
       }
     },
-  },
-  setup() {
-    const url = inject("url");
-    return {
-      url,
-    };
-  },
-};
-var app = {
-  el: "#app",
-  data: {
-    checkbox: false,
-  },
-  methods: {
     toggleCheckbox() {
       this.checkbox = !this.checkbox;
-      this.$emit("setCheckboxVal", this.checkbox);
     },
   },
 };
@@ -1006,8 +1053,8 @@ body {
 .switch {
   position: relative;
   display: inline-block;
-  width: 58px;
-  height: 32px;
+  width: 56px;
+  height: 24px;
 }
 
 .switch input {
@@ -1029,10 +1076,10 @@ body {
 .slider:before {
   position: absolute;
   content: "";
-  height: 26px;
-  width: 26px;
+  height: 22px;
+  width: 22px;
   left: 4px;
-  bottom: 4px;
+  bottom: 1.5px;
   background-color: white;
   -webkit-transition: 0.4s;
   transition: 0.4s;

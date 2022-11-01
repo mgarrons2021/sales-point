@@ -2,6 +2,7 @@ import jsPDF from "jspdf";
 import NumeroaLetras from "../utils/NumeroaLetras.js";
 import generateControlCode from "../utils/CodigoControl.js";
 import html2canvas from "html2canvas";
+import moment from "moment";
 
 let datos_empresa = {
   nombre: "DONESCO SRL",
@@ -21,13 +22,26 @@ export default function downloadPDF(
   idcliente = null,
   leyenda = null
 ) {
-  var hora_actual = datos.hora_actual ? datos.hora_actual : hora_actual_2;
+  var hora_actual;
+  console.log(datos.hora_actual);
+  if (datos.hora_actual) {
+    let hora = moment(datos.hora_actual, "HH:mm:ss").format("HH:mm");
+    hora_actual = hora;
+  } else {
+    hora_actual = hora_actual_2;
+    console.log(hora_actual);
+  }
   var fecha_actual2 =
     fecha_actual.getDate() +
     "/" +
     (fecha_actual.getMonth() + 1) +
     "/" +
     fecha_actual.getFullYear();
+
+  if (datos.fecha_emision_manual != null && datos.hora_emision_manual != null) {
+    hora_actual = moment(datos.hora_emision_manual, "HH:mm:ss").format("HH:mm");
+    fecha_actual2 = moment(datos.fecha_emision_manual, "Y-MM-DD").format("DD/MM/Y");
+  }
   var content_qr = document.getElementById("content_qr");
   content_qr.style.opacity = 1;
   html2canvas(content_qr).then(function (canvas) {
@@ -142,18 +156,20 @@ export default function downloadPDF(
       pdf.text("NOMBRE/RAZÓN SOCIAL:    " + datos.cliente, 2, salto);
     }
     salto += 4;
-
+    let complemento =
+      datos.complemento != null && datos.complemento != ""
+        ? " - " + datos.complemento
+        : "";
     pdf.text(
-      "                        NIT/CI/CEX:    " + datos.nit_ci,
+      "                        NIT/CI/CEX:    " + datos.nit_ci + complemento,
       2,
       salto
     );
     salto += 4;
     pdf.text("                  COD. CLIENTE:    " + idcliente, 2, salto);
-    console.log(fecha_actual2);
     salto += 4;
     pdf.text(
-      "         FECHA DE EMISION:    " + fecha_actual2 + " " + hora_actual_2,
+      "         FECHA DE EMISION:    " + fecha_actual2 + " " + hora_actual,
       2,
       salto
     );
@@ -316,7 +332,8 @@ export default function downloadPDF(
     );
     salto += 6;
     console.log(datos.evento_significativo_id);
-    if (datos.evento_significativo_id === null) {
+
+    if (datos.evento_significativo_id == null) {
       pdf.setFontSize(9);
       pdf.text('"Este documento es la Representación Gráfica de un', 5, salto);
       salto += 4;
