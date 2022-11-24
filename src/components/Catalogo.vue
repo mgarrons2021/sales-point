@@ -8,12 +8,14 @@
               Formulario de Registro - Nro de Transaccion:
               {{ this.nro_transaccion + 1 }}
             </h5>
+
           </div>
           <div class="field col-3">
             <div class="modalidadoffline">
               <div class="panel-heading">
                 <h5 class="panel-title">Emision Fuera de Linea</h5>
               </div>
+
               <div class="panel-body">
                 <label class="switch">
                   <input type="checkbox" @click="toggleCheckbox()" />
@@ -202,7 +204,14 @@
           <template #grid="slotProps">
             <div class="col-12 md:col-6">
               <div
-                class="card m-1 border-1 surface-border justify-content-center align-items-center"
+                class="
+                  card
+                  m-1
+                  border-1
+                  surface-border
+                  justify-content-center
+                  align-items-center
+                "
               >
                 <div class="text-center">
                   <img
@@ -472,6 +481,15 @@ export default {
   productService: null,
   created() {
     this.productService = new ProductService();
+   /*  axios
+      .get(this.url + "conexion-siat")
+      .then(response => {
+        if(response.status == 500){
+            this.toggleCheckbox()
+        }else if(!response.data.return.transaccion){
+            this.toggleCheckbox()
+        }
+      }) */
   },
   mounted() {
     this.get_transaction();
@@ -650,7 +668,7 @@ export default {
       let fecha = new Date();
       let fecha_actual = this.parseFecha(fecha);
       let fecha_prueba = moment().format("dddd");
-      console.log("patrick" + fecha_prueba);
+      /* console.log("patrick" + fecha_prueba); */
 
       let fecha_emision_manual_2;
       let hora_emision_manual_2;
@@ -783,24 +801,14 @@ export default {
               position: "center",
               icon: "success",
               title: "Success",
-              text: "Venta Registrada Exitosamente",
+              text: "Venta Registrada Exitosamente, Fuera de Linea",
               showConfirmButton: true,
               timer: 1500,
             });
           }
-
-          if (result.data.response_siat == "undefined") {
-            setTimeout(function () {
-              downloadPDF(
-                datos_de_venta,
-                this.cufd,
-                visitas,
-                cuf,
-                idcliente,
-                leyenda
-              );
-            }, 50);
-          }
+          console.log(
+            result.data.response_siat.RespuestaServicioFacturacion.codigoEstado
+          );
 
           let response_siat = result.data.response_siat
             ? result.data.response_siat.RespuestaServicioFacturacion
@@ -818,6 +826,19 @@ export default {
                 showConfirmButton: true,
                 timer: 1500,
               });
+            } else if (response_siat.codigoEstado == 902) {
+              this.$swal.fire({
+                position: "center",
+                icon: "error",
+                title: response_siat.codigoEstado,
+                text:
+                  response_siat.codigoDescripcion +
+                  ' "' +
+                  response_siat.mensajesList.descripcion +
+                  '"',
+                showConfirmButton: true,
+                timer: 5000,
+              });
             } else {
               this.$swal.fire({
                 position: "center",
@@ -832,6 +853,28 @@ export default {
                 timer: 5000,
               });
             }
+          }
+          if (
+            result.data.response_siat.RespuestaServicioFacturacion
+              .codigoEstado === 902
+          ) {
+            return;
+          }
+          if (
+            result.data.response_siat == "undefined" &&
+            result.data.response_siat.RespuestaServicioFacturacion
+              .codigoEstado !== 902
+          ) {
+            setTimeout(function () {
+              downloadPDF(
+                datos_de_venta,
+                this.cufd,
+                visitas,
+                cuf,
+                idcliente,
+                leyenda
+              );
+            }, 100);
           }
 
           if (this.optionsPayment.name == "Comida Personal") {

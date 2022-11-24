@@ -1,3 +1,30 @@
+<style scoped>
+.personal-badge {
+  border-radius: 8px;
+}
+.badgered {
+  background-color: red;
+  color: white;
+  padding: 4px 8px;
+  text-align: center;
+  border-radius: 5px;
+}
+.badgegreen {
+  background-color: green;
+  color: white;
+  padding: 4px 8px;
+  text-align: center;
+  border-radius: 5px;
+}
+.avatar {
+  vertical-align: middle;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  margin-left: 5px;
+}
+</style>
+
 <template>
   <div class="layout-topbar">
     <button
@@ -11,7 +38,22 @@
       :style="isVisibilityButtonCloseTurn ? 'display:block' : 'display:none'"
       class="p-button-danger ml-5"
       @click="closeTurn()"
-    />
+    >
+    </Button>
+    <div class="ml-auto">
+      <span v-bind:class="{ badgegreen, badgered }">Conexion a SIAT</span>
+      <img
+        src="https://siat.impuestos.gob.bo/Autenticacion/common/images/SIAT.jpg"
+        alt="Avatar"
+        class="avatar"
+      />
+    </div>
+    <!-- <Button
+      label="Cambiar Color"
+      class="p-button-warning ml-5"
+      @click="(badgegreen= !badgegreen)"
+
+    >  </Button>-->
     <button
       class="p-link layout-topbar-menu-button layout-topbar-button"
       v-styleclass="{
@@ -57,6 +99,8 @@ export default {
       isVisibilityButtonCloseTurn: true,
       showModal: false,
       infopersonal: "",
+      badgered: false,
+      badgegreen: true,
     };
   },
   methods: {
@@ -70,6 +114,10 @@ export default {
       return this.$appState.darkTheme
         ? "images/logo-white.svg"
         : "images/logo-dark.svg";
+    },
+    verificarConexion() {},
+    verificar() {
+      return false;
     },
     closeTurn() {
       this.$swal
@@ -99,6 +147,7 @@ export default {
                 localStorage.removeItem("turnoId");
                 localStorage.setItem("Orden", 1);
                 if (result.status == 200) {
+                  console.log(result);
                   this.$router.push("/turno");
                 } else {
                   console.log("Peticion Fallida");
@@ -110,13 +159,13 @@ export default {
         });
     },
     check_open_turn() {
-      let turno_id = localStorage.getItem('turnoId');
-	  console.log("Turno Existe :  "+(turno_id!=null).toString());
-	  if(turno_id==null){
-      this.isVisibilityButtonCloseTurn = false; 
-	  }else{
-      this.isVisibilityButtonCloseTurn = true;
-    }
+      let turno_id = localStorage.getItem("turnoId");
+      console.log("Turno Existe :  " + (turno_id != null).toString());
+      if (turno_id == null) {
+        this.isVisibilityButtonCloseTurn = false;
+      } else {
+        this.isVisibilityButtonCloseTurn = true;
+      }
     },
     returnPerson() {
       this.infopersonal = JSON.parse(localStorage.getItem("User"));
@@ -148,10 +197,10 @@ export default {
 
   mounted() {
     this.returnPerson();
-	this.check_open_turn();
+    this.check_open_turn();
   },
-  updated(){
-	this.check_open_turn();
+  updated() {
+    this.check_open_turn();
   },
   computed: {
     darkTheme() {
@@ -163,6 +212,17 @@ export default {
     return {
       url,
     };
+  },
+  created() {
+    axios.get(this.url + "conexion-siat").then((response) => {
+      if (response.status == 500) {
+        this.badgegreen = false;
+        this.badgered = true;
+      } else if (!response.data.return.transaccion) {
+        this.badgegreen = false;
+        this.badgered = true;
+      }
+    });
   },
 };
 </script>

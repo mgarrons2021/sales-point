@@ -3,6 +3,7 @@
     <div class="col-12">
       <div class="card">
         <h3 class="text-center">Iniciar nuevo Turno</h3>
+
         <h4 class="text-center">
           Sucursal: {{ infopersonal.sucursal_nombre }}
         </h4>

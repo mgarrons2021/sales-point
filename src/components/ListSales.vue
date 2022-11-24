@@ -283,6 +283,7 @@ export default {
               for (let i = 0; i < ventas.length; i++) {
                 detalles.push({
                   cantidad: ventas[i].cantidad,
+                  plato_id: ventas[i].plato_id,
                   plato: ventas[i].nombre,
                   costo: parseFloat(ventas[i].precio).toFixed(2),
                   descuento: parseFloat(ventas[i].descuento).toFixed(2),
@@ -339,11 +340,11 @@ export default {
                 1;
               let ventas = result.data.venta_detalle;
               let detalles = [];
-
               for (let i = 0; i < ventas.length; i++) {
                 detalles.push({
                   cantidad: ventas[i].cantidad,
                   plato: ventas[i].nombre,
+                  plato_id: ventas[i].plato_id,
                   costo: parseFloat(ventas[i].precio).toFixed(2),
                   descuento: parseFloat(ventas[i].descuento).toFixed(2),
                   subtotal: parseFloat(ventas[i].subtotal).toFixed(2),
@@ -370,12 +371,15 @@ export default {
                 qr: this.QRValue,
                 sucursal: result.data.ventas.sucursal,
                 sucursal_nombre: result.data.ventas.sucursal_nombre,
-                evento_significativo_id: result.data.ventas.evento_significativo_id
+                evento_significativo_id:
+                  result.data.ventas.evento_significativo_id,
               };
               let autorizacion = this.autorizacion;
               console.log(autorizacion);
+
+              console.log(idcliente);
               setTimeout(function () {
-                console.log(autorizacion);
+              console.log(idcliente);
                 downloadPDF(
                   datos_de_venta,
                   autorizacion,
